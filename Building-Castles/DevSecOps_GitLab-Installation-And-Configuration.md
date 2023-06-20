@@ -1,0 +1,168 @@
+# Exercise | GitLab Installation And Configuration | Solutions
+
+1. Launch the GitLab instance using the `gitlab/gitlab-ce:latest` container,
+   exposing these ports (Host/Container):
+   - 8080:80
+   - 8443:443
+   - 2222:22
+
+   ```console
+   > docker run --detach --name gitlab --publish 8080:80 --publish 8443:443 --publish 2222:22 gitlab/gitlab-ce:latest
+   ```
+
+   Check the progresses, until the web interface comes up:
+
+   ```console
+   > docker logs -f gitlab
+   Thank you for using GitLab Docker Image!
+   Current version: gitlab-ce=16.0.5-ce.0
+   ...
+   ```
+
+2. Get the root user password:
+
+   ```console
+   > docker exec gitlab cat /etc/gitlab/initial_root_password
+   # WARNING: This value is valid only in the following conditions
+   #          1. If provided manually (either via `GITLAB_ROOT_PASSWORD` environment variable or via `gitlab_rails['initial_root_password']` setting in `gitlab.rb`, it was provided before database was seeded for the first time (usually, the first reconfigure run).
+   #          2. Password hasn't been changed manually, either via UI or via command line.
+   #
+   #          If the password shown here doesn't work, you must reset the admin password following https://docs.gitlab.com/ee/security/reset_user_password.html#reset-your-root-password.
+   
+   Password: nGd+wEG+fIaw+reKUun3YbqrMXYK0JdDMEwE9SwOu1U=
+   
+   # NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
+   ```
+
+   Login into interface and create a user:
+
+   [http://localhost:8080/admin/users/new](http://localhost:8080/admin/users/new)
+
+   By giving these inputs:
+
+   - Name: DevSecOps
+     Username: devsecops
+     Email: devsecops@example.com
+
+   And press "Create user".
+
+   Create an SSH keypair:
+
+   ```console
+   > ssh-keygen
+   > cat ~/.ssh/id_rsa.pub
+   ```
+
+   And then add the key by Impersonating the newly created user:
+
+   [http://localhost:8080/admin/users/devsecops/impersonate](http://localhost:8080/admin/users/devsecops/impersonate)
+
+   And by adding the `id_rsa.pub` contents as a key for the user:
+
+   [http://localhost:8080/-/profile/keys](http://localhost:8080/-/profile/keys)
+
+   Move out from impersonation by click on the `Stop impersonation` icon on the
+   top right container.
+
+3. Test the credentials:
+
+   ```console
+   > ssh -p 2222 git@localhost
+   The authenticity of host '[localhost]:2222 ([::1]:2222)' can't be established.
+   ED25519 key fingerprint is SHA256:ek60stwFDQK1eHrkRNlRpW4EHETBt8HCjqwtIKZN4J0.
+   This key is not known by any other names
+   Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+   Warning: Permanently added '[localhost]:2222' (ED25519) to the list of known hosts.
+   PTY allocation request failed on channel 0
+   Welcome to GitLab, @devsecops!
+   Connection to localhost closed.
+   ```
+
+   Create a project with an initial push:
+
+   ```console
+   > mkdir myproject
+   > cd myproject
+   > echo 'My DevSecOps repo' > README.md
+   > git config --global init.defaultBranch main
+   > git remote add origin ssh://git@localhost:2222/devsecops/myproject.git
+   > git push -u origin main
+   Enumerating objects: 3, done.
+   Counting objects: 100% (3/3), done.
+   Writing objects: 100% (3/3), 232 bytes | 232.00 KiB/s, done.
+   Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+   remote: 
+   remote: 
+   remote: The private project devsecops/myproject was successfully created.
+   remote: 
+   remote: To configure the remote, run:
+   remote:   git remote add origin git@7aa34d0e6b80:devsecops/myproject.git
+   remote: 
+   remote: To view the project, visit:
+   remote:   http://7aa34d0e6b80/devsecops/myproject
+   remote: 
+   remote: 
+   remote: 
+   To ssh://localhost:2222/devsecops/myproject.git
+    * [new branch]                main -> main
+   Branch 'main' set up to track remote branch 'main' from 'origin'.
+   ```
+
+4. Get the IP address of the GitLab container:
+
+   ```console
+   > docker inspect --format {{.NetworkSettings.IPAddress}} gitlab
+   172.17.0.2
+   ```
+
+   Using the web interface, as `Administrator` user, change the `Custom Git clone
+   URL for HTTP(S)` value in the `Visibility and access controls` section at:
+
+   [http://localhost:8080/admin/application_settings/general](http://localhost:8080/admin/application_settings/general)
+
+   Adding the GitLab IP related url, in this case `http://172.17.0.2`.
+
+
+5. Get the GitLab runner token registration at:
+
+   [http://localhost:8080/devsecops/myproject/-/settings/ci_cd](http://localhost:8080/devsecops/myproject/-/settings/ci_cd)
+
+   Expanding the "Runners" section and selecting the three dots beside `New
+   project runner` and finally copying the token, which will be something like
+   `GR1348941uHeDhAB5DDA8r_5xvxsm`.
+
+6. Set up the runner by launching its container:
+
+   ```console
+   > mkdir gitlab-runner
+
+   > docker run --detach --name gitlab-runner --privileged --volume /var/run/docker.sock:/var/run/docker.sock --volume $PWD/gitlab-runner:/etc/gitlab-runner gitlab/gitlab-runner:latest
+   ```
+
+   Register the runner inside GitLab:
+
+   ```console
+   > docker exec -it gitlab-runner gitlab-runner register
+   Runtime platform                                    arch=amd64 os=linux pid=53 revision=85586bd1 version=16.0.2
+   Running in system-mode.                            
+                                                      
+   Enter the GitLab instance URL (for example, https://gitlab.com/):
+   http://172.17.0.2
+   Enter the registration token:
+   GR1348941uHeDhAB5DDA8r_5xvxsm
+   Enter a description for the runner:
+   [3918f61607cc]: 
+   Enter tags for the runner (comma-separated):
+   
+   Enter optional maintenance note for the runner:
+   
+   WARNING: Support for registration tokens and runner parameters in the 'register' command has been deprecated in GitLab Runner 15.6 and will be replaced with support for authentication tokens. For more information, see https://gitlab.com/gitlab-org/gitlab/-/issues/380872 
+   Registering runner... succeeded                     runner=GR1348941uHeDhAB5
+   Enter an executor: parallels, shell, kubernetes, instance, custom, docker, docker-windows, ssh, virtualbox, docker-autoscaler, docker+machine:
+   docker
+   Enter the default Docker image (for example, ruby:2.7):
+   ubuntu:jammy            
+   Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
+    
+   Configuration (with the authentication token) was saved in "/etc/gitlab-runner/config.toml" 
+   ```
