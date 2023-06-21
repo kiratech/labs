@@ -1,4 +1,4 @@
-# Exercise | Install and configure Nexus
+# Exercise | Nexus installation and configuration
 
 1. Launch the Nexus instance using the `sonatype/nexus3` container, exposing
    these ports (Host/Container):
@@ -6,7 +6,11 @@
    - 5000:5000
 
    ```console
-   > docker run --detach --publish 8081:8081 --publish 5000:5000 --name nexus sonatype/nexus3
+   > docker run --detach \
+     --name nexus \
+     --publish 8081:8081 \
+     --publish 5000:5000 \
+     sonatype/nexus3
    Unable to find image 'sonatype/nexus3:latest' locally
    latest: Pulling from sonatype/nexus3
    36c12cb044ac: Pull complete 
@@ -27,13 +31,6 @@
    > docker logs -f nexus
    2023-06-21 10:27:40,499+0000 INFO  [FelixStartLevel] *SYSTEM org.sonatype.nexus.pax.logging.NexusLogActivator - start
    ...
-   ```
-
-   Get the container IP (for further reference):
-
-   ```console
-   > docker inspect --format {{.NetworkSettings.IPAddress}} nexus
-   172.17.0.5
    ```
 
    Get the installation password:
@@ -88,9 +85,15 @@
 
    Click `Expand` button of the `Variables` section and add:
 
-   - `NEXUS_HOST`: localhost:5000
+   - `NEXUS_HOST`: 172.17.0.1:5000
    - `NEXUS_USERNAME`: admin
    - `NEXUS_PASSWORD`: admin123
+
+   The `NEXUS_HOST` refers to the IP of the docker host, check
+   [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how to get it.
+
+   Ensure that for the `NEXUS_PASSWORD` variable the `Mask variable` option is
+   selected.
 
 4. Add the build process to the pipeline by making the `.gitlab-ci.yml` file look
    like this:
@@ -125,9 +128,9 @@
      stage: publish
      script:
        - echo "Publishing image to Nexus Repository..."
-       - docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} ${NEXUS_URL}
-       - docker tag ${DOCKER_IMAGE_NAME}:latest ${NEXUS_URL}/${DOCKER_IMAGE_NAME}:latest
-       - docker push ${NEXUS_URL}/${DOCKER_IMAGE_NAME}:latest
+       - docker login -u ${NEXUS_USERNAME} -p ${NEXUS_PASSWORD} ${NEXUS_HOST}
+       - docker tag ${DOCKER_IMAGE_NAME}:latest ${NEXUS_HOST}/${DOCKER_IMAGE_NAME}:latest
+       - docker push ${NEXUS_HOST}/${DOCKER_IMAGE_NAME}:latest
      only:
        - main
    ```

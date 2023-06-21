@@ -26,11 +26,12 @@
    any other interface on the host.
    To make services reachable between containers it is mandatory to use an IP
    different from `localhost` (`127.0.0.1`).
-   The machine main IP address, can be identified like this:
+   The docker host should have an interface called `docker0`, and its IP address
+   can be identified like this:
 
    ```console
-   > hostname -I | cut -f1 -d' '
-   192.168.1.50
+   > ip address show dev docker0 | grep 'inet ' | awk '{print $2}'
+   172.17.0.1/16
    ```
 
    This value must be used as a reference for the services configurations.

@@ -1,11 +1,14 @@
-# Exercise | SonarQube Installation And Configuration | Solutions
+# Exercise | SonarQube installation and configuration
 
 1. Launch the SonarQube instance using the `sonarqube:latest` container image,
    exposing these ports (Host/Container):
    - 9000:9000
 
    ```console
-   > docker run --detach --name sonarqube --publish 9000:9000 sonarqube:latest
+   > docker run --detach \
+     --name sonarqube \
+     --publish 9000:9000 \
+     sonarqube:latest
    ```
 
    Check the progresses, until the web interface comes up:
@@ -28,21 +31,17 @@
    Create a token named "GitLab" leaving "30 days" as "Expires in" and take note
    of the value, which will be something like `squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5`.
 
-3. Get `sonarqube` container IP address:
-
-   ```console
-   > docker inspect --format {{.NetworkSettings.IPAddress}} sonarqube
-   172.17.0.3
-   ```
-
-4. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
+3. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
 
    [http://localhost:8080/devsecops/myproject/-/settings/ci_cd](http://localhost:8080/devsecops/myproject/-/settings/ci_cd)
 
-   And add these two variables (click `Expand` button of the `Variables` section):
+   Click `Expand` button of the `Variables` section, and add:
 
-   - `SONARQUBE_HOST`: http://172.17.0.3:9000
+   - `SONARQUBE_HOST`: http://172.17.0.1:9000
    - `SONARQUBE_TOKEN`: squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5
+
+   The `SONARQUBE_HOST` refers to the IP of the docker host, check
+   [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how to get it.
 
    Ensure that for the `SONARQUBE_TOKEN` variable the `Mask variable` option is
    selected.

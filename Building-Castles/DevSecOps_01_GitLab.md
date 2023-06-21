@@ -1,23 +1,4 @@
-# Exercise | GitLab Installation And Configuration | Solutions
-
-0. All the services deployed in this lab will run as containers on a host.
-   This means that each service port will be published on the docker host, by
-   using `--publish` option, that will make the port listen on `localhost` and
-   any other interface on the host.
-   To make services reachable between containers it is mandatory to use an IP
-   different from `localhost` (`127.0.0.1`).
-   The machine main IP address, can be identified like this:
-
-   ```console
-   > hostname -I | cut -f1 -d' '
-   192.168.1.50
-   ```
-
-   This value must be used as a reference for the services configurations.
-
-   NOTE: the IP address depends on the machine configuration, so you might want
-   to chose a different IP. It is possible to list all the machine IP using the
-   `ip address show` command.
+# Exercise | GitLab installation and configuration
 
 1. Launch the GitLab instance using the `gitlab/gitlab-ce:latest` container,
    exposing these ports (Host/Container):
@@ -26,10 +7,11 @@
    - 2222:22
 
    ```console
-   > docker run --detach --name gitlab \
-     --publish $MYSERVICESIP:8080:80 \
-     --publish $MYSERVICESIP:8443:443 \
-     --publish $MYSERVICESIP:2222:22 \
+   > docker run --detach \
+     --name gitlab \
+     --publish 8080:80 \
+     --publish 8443:443 \
+     --publish 2222:22 \
      gitlab/gitlab-ce:latest
    ```
 
@@ -105,10 +87,15 @@
 
    ```console
    > mkdir myproject
+
    > cd myproject
+
    > echo 'My DevSecOps repo' > README.md
+
    > git config --global init.defaultBranch main
+
    > git remote add origin ssh://git@localhost:2222/devsecops/myproject.git
+
    > git push -u origin main
    Enumerating objects: 3, done.
    Counting objects: 100% (3/3), done.
@@ -131,20 +118,16 @@
    Branch 'main' set up to track remote branch 'main' from 'origin'.
    ```
 
-4. Get the IP address of the GitLab container:
-
-   ```console
-   > docker inspect --format {{.NetworkSettings.IPAddress}} gitlab
-   172.17.0.2
-   ```
+4. Fix the IP address of the GitLab Git clone url.
 
    Using the web interface, as `Administrator` user, change the `Custom Git clone
    URL for HTTP(S)` value in the `Visibility and access controls` section at:
 
    [http://localhost:8080/admin/application_settings/general](http://localhost:8080/admin/application_settings/general)
 
-   Adding the GitLab IP related url, in this case `http://172.17.0.2`.
-
+   Adding the GitLab IP related url, in this case `http://192.168.1.5:80800`
+   (check [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how 
+   to get the IP host.
 
 5. Get the GitLab runner token registration at:
 
@@ -159,13 +142,27 @@
    ```console
    > mkdir gitlab-runner
 
-   > docker run --detach --name gitlab-runner --privileged --volume /var/run/docker.sock:/var/run/docker.sock --volume $PWD/gitlab-runner:/etc/gitlab-runner gitlab/gitlab-runner:latest
+   > docker run --detach \
+     --name gitlab-runner \
+     --privileged \
+     --volume /var/run/docker.sock:/var/run/docker.sock \
+     --volume $PWD/gitlab-runner:/etc/gitlab-runner \
+     gitlab/gitlab-runner:latest
    ```
 
-   Register the runner inside GitLab:
+   Register the runner inside GitLab (note the `--url` option pointing to the
+   docker host IP):
 
    ```console
-   > docker exec -it gitlab-runner gitlab-runner register -n --url http://172.17.0.2 --registration-token  GR1348941uHeDhAB5DDA8r_5xvxsm --executor docker --description "My Docker Runner" --docker-image "docker:20.10.16" --docker-privileged --docker-volumes "/var/run/docker.sock:/var/run/docker.sock"
+   > docker exec -it gitlab-runner gitlab-runner register -n \
+     --url http://172.17.0.1:8080 \
+     --registration-token GR1348941uHeDhAB5DDA8r_5xvxsm \
+     --executor docker \
+     --description "My Docker Runner" \
+     --docker-image "docker:latest" \
+     --docker-privileged \
+     --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
+     --docker-volumes "/certs/client"
    Runtime platform                                    arch=amd64 os=linux pid=54 revision=85586bd1 version=16.0.2
    Running in system-mode.
 
