@@ -1,5 +1,24 @@
 # Exercise | GitLab Installation And Configuration | Solutions
 
+0. All the services deployed in this lab will run as containers on a host.
+   This means that each service port will be published on the docker host, by
+   using `--publish` option, that will make the port listen on `localhost` and
+   any other interface on the host.
+   To make services reachable between containers it is mandatory to use an IP
+   different from `localhost` (`127.0.0.1`).
+   The machine main IP address, can be identified like this:
+
+   ```console
+   > hostname -I | cut -f1 -d' '
+   192.168.1.50
+   ```
+
+   This value must be used as a reference for the services configurations.
+
+   NOTE: the IP address depends on the machine configuration, so you might want
+   to chose a different IP. It is possible to list all the machine IP using the
+   `ip address show` command.
+
 1. Launch the GitLab instance using the `gitlab/gitlab-ce:latest` container,
    exposing these ports (Host/Container):
    - 8080:80
@@ -7,7 +26,11 @@
    - 2222:22
 
    ```console
-   > docker run --detach --name gitlab --publish 8080:80 --publish 8443:443 --publish 2222:22 gitlab/gitlab-ce:latest
+   > docker run --detach --name gitlab \
+     --publish $MYSERVICESIP:8080:80 \
+     --publish $MYSERVICESIP:8443:443 \
+     --publish $MYSERVICESIP:2222:22 \
+     gitlab/gitlab-ce:latest
    ```
 
    Check the progresses, until the web interface comes up:
