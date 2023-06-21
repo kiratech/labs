@@ -65,7 +65,7 @@
        - main
    ```
 
-   And then add it to the 
+   Commit and push the chage:
 
    ```console
    > git add .
@@ -93,3 +93,5 @@
    To ssh://localhost:2222/devsecops/myproject.git
       f38a63bbf9f6..682a9b482669  main -> main
    ```
+
+   And then follow the progress from the GitLab interface.

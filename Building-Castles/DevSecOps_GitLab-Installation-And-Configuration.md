@@ -28,9 +28,9 @@
    #          2. Password hasn't been changed manually, either via UI or via command line.
    #
    #          If the password shown here doesn't work, you must reset the admin password following https://docs.gitlab.com/ee/security/reset_user_password.html#reset-your-root-password.
-   
+
    Password: nGd+wEG+fIaw+reKUun3YbqrMXYK0JdDMEwE9SwOu1U=
-   
+
    # NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
    ```
 
@@ -91,18 +91,18 @@
    Counting objects: 100% (3/3), done.
    Writing objects: 100% (3/3), 232 bytes | 232.00 KiB/s, done.
    Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
-   remote: 
-   remote: 
+   remote:
+   remote:
    remote: The private project devsecops/myproject was successfully created.
-   remote: 
+   remote:
    remote: To configure the remote, run:
    remote:   git remote add origin git@7aa34d0e6b80:devsecops/myproject.git
-   remote: 
+   remote:
    remote: To view the project, visit:
    remote:   http://7aa34d0e6b80/devsecops/myproject
-   remote: 
-   remote: 
-   remote: 
+   remote:
+   remote:
+   remote:
    To ssh://localhost:2222/devsecops/myproject.git
     * [new branch]                main -> main
    Branch 'main' set up to track remote branch 'main' from 'origin'.
@@ -142,27 +142,13 @@
    Register the runner inside GitLab:
 
    ```console
-   > docker exec -it gitlab-runner gitlab-runner register
-   Runtime platform                                    arch=amd64 os=linux pid=53 revision=85586bd1 version=16.0.2
-   Running in system-mode.                            
-                                                      
-   Enter the GitLab instance URL (for example, https://gitlab.com/):
-   http://172.17.0.2
-   Enter the registration token:
-   GR1348941uHeDhAB5DDA8r_5xvxsm
-   Enter a description for the runner:
-   [3918f61607cc]: 
-   Enter tags for the runner (comma-separated):
-   
-   Enter optional maintenance note for the runner:
-   
-   WARNING: Support for registration tokens and runner parameters in the 'register' command has been deprecated in GitLab Runner 15.6 and will be replaced with support for authentication tokens. For more information, see https://gitlab.com/gitlab-org/gitlab/-/issues/380872 
+   > docker exec -it gitlab-runner gitlab-runner register -n --url http://172.17.0.2 --registration-token  GR1348941uHeDhAB5DDA8r_5xvxsm --executor docker --description "My Docker Runner" --docker-image "docker:20.10.16" --docker-privileged --docker-volumes "/var/run/docker.sock:/var/run/docker.sock"
+   Runtime platform                                    arch=amd64 os=linux pid=54 revision=85586bd1 version=16.0.2
+   Running in system-mode.
+
+   WARNING: Support for registration tokens and runner parameters in the 'register' command has been deprecated in GitLab Runner 15.6 and will be replaced with support for authentication tokens. For more information, see https://gitlab.com/gitlab-org/gitlab/-/issues/380872
    Registering runner... succeeded                     runner=GR1348941uHeDhAB5
-   Enter an executor: parallels, shell, kubernetes, instance, custom, docker, docker-windows, ssh, virtualbox, docker-autoscaler, docker+machine:
-   docker
-   Enter the default Docker image (for example, ruby:2.7):
-   ubuntu:jammy            
    Runner registered successfully. Feel free to start it, but if it's running already the config should be automatically reloaded!
-    
-   Configuration (with the authentication token) was saved in "/etc/gitlab-runner/config.toml" 
+
+   Configuration (with the authentication token) was saved in "/etc/gitlab-runner/config.toml"
    ```
