@@ -90,11 +90,15 @@
 
    > cd myproject
 
+   > git init
+
    > echo 'My DevSecOps repo' > README.md
+
+   > git add . && git commit -m "Initial commit"
 
    > git config --global init.defaultBranch main
 
-   > git remote add origin ssh://git@localhost:2222/devsecops/myproject.git
+   > git remote add origin ssh://git@172.17.0.1:2222/devsecops/myproject.git
 
    > git push -u origin main
    Enumerating objects: 3, done.
@@ -123,15 +127,15 @@
    Using the web interface, as `Administrator` user, change the `Custom Git clone
    URL for HTTP(S)` value in the `Visibility and access controls` section at:
 
-   [http://localhost:8080/admin/application_settings/general](http://localhost:8080/admin/application_settings/general)
+   [http://172.17.0.1:8080/admin/application_settings/general](http://172.17.0.1:8080/admin/application_settings/general)
 
-   Adding the GitLab IP related url, in this case `http://192.168.1.5:80800`
+   Adding the GitLab IP related url, in this case `http://172.17.0.1:8080`
    (check [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how 
    to get the IP host.
 
 5. Get the GitLab runner token registration at:
 
-   [http://localhost:8080/devsecops/myproject/-/settings/ci_cd](http://localhost:8080/devsecops/myproject/-/settings/ci_cd)
+   [http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd)
 
    Expanding the "Runners" section and selecting the three dots beside `New
    project runner` and finally copying the token, which will be something like
