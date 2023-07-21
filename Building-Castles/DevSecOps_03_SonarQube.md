@@ -53,7 +53,7 @@
    stages:
      ...
      - sonarqube
-   
+
    sonarqube_job:
      stage: sonarqube
      image: sonarsource/sonar-scanner-cli:latest
@@ -69,7 +69,7 @@
    Commit and push the change:
 
    ```console
-   > git add && git commit -m "Add SonarQube stage to CI"
+   > git add . && git commit -m "Add SonarQube stage to CI"
    [main 682a9b482669] Add SonarQube stage to CI
     1 file changed, 12 insertions(+)
     create mode 100644 .gitlab-ci.yml
@@ -77,4 +77,10 @@
    > git push
    ```
 
-   And then follow the progress from the GitLab interface.
+   And then follow the progress from the GitLab interface, under the CI
+   pipelines a new stage should be visible:
+
+   ![DevSecOps_03_Sonarqube_GitLab-CI.png](images/DevSecOps_03_Sonarqube_GitLab-CI.png)
+
+   The project `myproject` will now be visible also in the Sonarqube web
+   interface.
