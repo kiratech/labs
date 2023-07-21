@@ -43,7 +43,7 @@
    In this case credentials will be `admin/f76d718e-a75c-4a62-8c0a-09ca57e8a6b9`.
    It is then time to complete the installation from the web ui console, by logging at:
 
-   [http://localhost:8081](http://localhost:8081)
+   [http://172.17.0.1:8081](http://172.17.0.1:8081)
 
    And complete the installation:
 
@@ -70,7 +70,7 @@
 2. Test credentials:
 
    ```console
-   > docker login -u admin localhost:5000
+   > docker login -u admin 172.17.0.1:5000
    Password: 
    WARNING! Your password will be stored unencrypted in /home/rasca/.docker/config.json.
    Configure a credential helper to remove this warning. See
@@ -81,7 +81,7 @@
 
 3. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
 
-   [http://localhost:8080/devsecops/myproject/-/settings/ci_cd](http://localhost:8080/devsecops/myproject/-/settings/ci_cd)
+   [http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd)
 
    Click `Expand` button of the `Variables` section and add:
 
@@ -95,16 +95,34 @@
    Ensure that for the `NEXUS_PASSWORD` variable the `Mask variable` option is
    selected.
 
-4. Add the build process to the pipeline by making the `.gitlab-ci.yml` file look
-   like this:
+4. Create a `Dockerfile` inside `myproject` with these contents:
+
+   ```dockerfile
+   FROM busybox                                                                    
+                                                                                
+   ENV NCAT_MESSAGE "Container test"                                               
+   ENV NCAT_HEADER "HTTP/1.1 200 OK"                                               
+   ENV NCAT_PORT "8888"                                                            
+                                                                                   
+   RUN addgroup -S nonroot && \                                                    
+       adduser -S nonroot -G nonroot                                               
+                                                                                   
+   USER nonroot                                                                    
+                                                                                   
+   CMD /bin/nc -l -k -p ${NCAT_PORT} -e /bin/echo -e "${NCAT_HEADER}\n\n${NCAT_MESSAGE}"
+   ```
+
+   Add the build process to the pipeline adding to `.gitlab-ci.yml` this code:
 
    ```yaml
    stages:
+     ...
      - build
-     - sonarqube
      - publish
    
    variables:
+     ...
+     ...
      DOCKER_IMAGE_NAME: ncat_http_msg_port
    
    build_job:
@@ -112,17 +130,6 @@
      script:
        - echo "Building myproject"
        - docker build -t ${DOCKER_IMAGE_NAME} .
-   
-   sonarqube_job:
-     stage: sonarqube
-     image: sonarsource/sonar-scanner-cli:latest
-     script:
-       - sonar-scanner
-         -Dsonar.host.url=${SONARQUBE_HOST}
-         -Dsonar.login=${SONARQUBE_TOKEN}
-         -Dsonar.projectKey=myproject
-     only:
-       - main
    
    publish_job:
      stage: publish
@@ -138,22 +145,15 @@
    Commit and push the changes:
 
    ```console
-   > git add .
-
-   > git commit -m "Add container build and push"
+   > git add . && git commit -m "Add container build and push"
    [main bf304ec35aa8] Add container build and push
     1 file changed, 35 insertions(+), 13 deletions(-)
     rewrite .gitlab-ci.yml (98%)
 
    > git push
-   Enumerating objects: 5, done.
-   Counting objects: 100% (5/5), done.
-   Delta compression using up to 16 threads
-   Compressing objects: 100% (3/3), done.
-   Writing objects: 100% (3/3), 645 bytes | 645.00 KiB/s, done.
-   Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
-   To ssh://localhost:2222/devsecops/myproject.git
-      96dcce050014..bf304ec35aa8  main -> main
    ```
 
-   And then follow the progress from the GitLab interface.
+   And then follow the progress from the GitLab interface, the result should be
+   the presence of the image inside the Nexus interface:
+
+   ![DevSecOps_04_Nexus_Image.png](images/DevSecOps_04_Nexus_Image.png)

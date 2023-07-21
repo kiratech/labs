@@ -82,7 +82,7 @@
 
    But by looking into the project details we will find a Failed status:
 
-   ![DevSecOps_04_SonarQube-Code-Failure-Analysis.png](DevSecOps_04_SonarQube-Code-Failure-Analysis.png)
+   ![DevSecOps_05_Simulate-Code-Problem_Sonarqube-Code-Failure.md](images/DevSecOps_05_Simulate-Code-Problem_Sonarqube-Code-Failure.md)
 
    This happens because we don't have a blocker for the pipeline.
 
