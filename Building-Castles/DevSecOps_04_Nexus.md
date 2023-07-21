@@ -153,7 +153,11 @@
    > git push
    ```
 
-   And then follow the progress from the GitLab interface, the result should be
-   the presence of the image inside the Nexus interface:
+   And then follow the progress from the GitLab interface:
+ 
+   ![DevSecOps_04_Nexus_GitLab-CI.png](images/DevSecOps_04_Nexus_GitLab-CI.png)
+
+   The final result should be the presence of the image inside the Nexus
+   interface:
 
    ![DevSecOps_04_Nexus_Image.png](images/DevSecOps_04_Nexus_Image.png)
