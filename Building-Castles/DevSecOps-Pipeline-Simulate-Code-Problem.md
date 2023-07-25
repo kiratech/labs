@@ -56,12 +56,12 @@
    > git push
    ```
 
-2. First thing to note, if the [DevSecOps_02_GitLab-SAST.md](DevSecOps_02_GitLab-SAST.md)
+2. First thing to note, if the [DevSecOps-Pipeline-GitLab-SAST.md](DevSecOps-Pipeline-GitLab-SAST.md)
    was correctly completed, the pipeline will be automatically integrated with
    the `semgrep-sast` test stage, which means that GitLab discovered the `.java`
    file and processed it with the ideal tester:
 
-   ![DevSecOps_05_Simulate-Code-Problem_GitLab-CI.png](images/DevSecOps_05_Simulate-Code-Problem_GitLab-CI.png)
+   ![DevSecOps-Pipeline-Simulate-Code-Problem-GitLab-CI.png](images/DevSecOps-Pipeline-Simulate-Code-Problem-GitLab-CI.png)
 
    Second thing to note is that, unexpectedly, the pipeline will complete with
    no errors. The SonarQube stage completes as follows:
@@ -79,7 +79,7 @@
 
    But by looking into the project details we will find a Failed status:
 
-   ![DevSecOps_05_Simulate-Code-Problem_Sonarqube-Code-Failure.png](images/DevSecOps_05_Simulate-Code-Problem_Sonarqube-Code-Failure.png)
+   ![DevSecOps-Pipeline-Simulate-Code-Problem-Sonarqube-Code-Failure.png](images/DevSecOps-Pipeline-Simulate-Code-Problem-Sonarqube-Code-Failure.png)
 
    This happens because we don't have a blocker for the pipeline.
 

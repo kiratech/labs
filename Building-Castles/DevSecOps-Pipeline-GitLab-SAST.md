@@ -96,17 +96,17 @@
 3. Inside the GitLab web interface, in short, under the CI/CD section of
    `myproject` it will be possible to select `Pipelines` and look at the status:
 
-   ![DevSecOps_02_GitLab-SAST_CI-1.png](images/DevSecOps_02_GitLab-SAST_CI-1.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-1.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-1.png)
 
    And after some time everything should be green:
 
-   ![DevSecOps_02_GitLab-SAST_CI-2.png](images/DevSecOps_02_GitLab-SAST_CI-2.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-2.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-2.png)
 
    Which it seems good, apart from the fact that we introduced faulty code for
    both php sources and Kubernetes manifests, and by looking at the details of
    the pipelines we should see something like this:
 
-   ![DevSecOps_02_GitLab-SAST_CI-Kube-Critical.png](images/DevSecOps_02_GitLab-SAST_CI-Kube-Critical.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-Kube-Critical.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-Kube-Critical.png)
 
    And the same applies for PHP, but with no `Critical` vulnerabilities.
    So, if we want to make this worthy, we need to instruct our pipeline to stop
@@ -221,18 +221,18 @@
 
    Should result in an additional pipeline run, with the two additional stages:
 
-   ![DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Failed.png](images/DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Failed.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Failed.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Failed.png)
 
    The reason why the `sast-analysis-kubesec` ended up in a failure is the one
    that was defined in the stage:
 
-   ![DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Failed-Reason.png](images/DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Failed-Reason.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Failed-Reason.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Failed-Reason.png)
 
    The `Critical` vulnerability was detected.
 
 5. To fix the detected problem we need to understand it from the analysis:
 
-   ![DevSecOps_02_GitLab-SAST_CI-Kube-Critical.png](images/DevSecOps_02_GitLab-SAST_CI-Kube-Critical.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-Kube-Critical.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-Kube-Critical.png)
 
    So the problem is the `AllowPrivilegeEscalation` section of the pod
    definition, which can be modified as follows:
@@ -260,4 +260,4 @@
 
    Finally, after some time, the pipeline should be all green:
 
-   ![DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Fixed.png](images/DevSecOps_02_GitLab-SAST_CI-Pipeline-With-Check-Fixed.png)
+   ![DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Fixed.png](images/DevSecOps-Pipeline-GitLab-SAST-CI-Pipeline-With-Check-Fixed.png)

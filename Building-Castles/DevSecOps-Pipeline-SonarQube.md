@@ -41,7 +41,7 @@
    - `SONARQUBE_TOKEN`: squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5
 
    The `SONARQUBE_HOST` refers to the IP of the docker host, check
-   [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how to get it.
+   [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how to get it.
 
    Ensure that for the `SONARQUBE_TOKEN` variable the `Mask variable` option is
    selected.
@@ -80,7 +80,7 @@
    And then follow the progress from the GitLab interface, under the CI
    pipelines a new stage should be visible:
 
-   ![DevSecOps_03_Sonarqube_GitLab-CI.png](images/DevSecOps_03_Sonarqube_GitLab-CI.png)
+   ![DevSecOps-Pipeline-Sonarqube-GitLab-CI.png](images/DevSecOps-Pipeline-Sonarqube-GitLab-CI.png)
 
    The project `myproject` will now be visible also in the Sonarqube web
    interface.

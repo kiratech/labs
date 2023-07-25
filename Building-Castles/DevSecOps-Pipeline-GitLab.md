@@ -130,7 +130,7 @@
    [http://172.17.0.1:8080/admin/application_settings/general](http://172.17.0.1:8080/admin/application_settings/general)
 
    Adding the GitLab IP related url, in this case `http://172.17.0.1:8080`
-   (check [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how 
+   (check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how 
    to get the IP host.
 
 5. Get the GitLab runner token registration at:

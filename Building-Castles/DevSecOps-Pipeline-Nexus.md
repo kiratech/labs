@@ -90,7 +90,7 @@
    - `NEXUS_PASSWORD`: admin123
 
    The `NEXUS_HOST` refers to the IP of the docker host, check
-   [DevSecOps_Requirements.md](DevSecOps_Requirements.md) to find out how to get it.
+   [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how to get it.
 
    Ensure that for the `NEXUS_PASSWORD` variable the `Mask variable` option is
    selected.
@@ -155,9 +155,9 @@
 
    And then follow the progress from the GitLab interface:
  
-   ![DevSecOps_04_Nexus_GitLab-CI.png](images/DevSecOps_04_Nexus_GitLab-CI.png)
+   ![DevSecOps-Pipeline-Nexus-GitLab-CI.png](images/DevSecOps-Pipeline-Nexus-GitLab-CI.png)
 
    The final result should be the presence of the image inside the Nexus
    interface:
 
-   ![DevSecOps_04_Nexus_Image.png](images/DevSecOps_04_Nexus_Image.png)
+   ![DevSecOps-Pipeline-Nexus-Image.png](images/DevSecOps-Pipeline-Nexus-Image.png)
