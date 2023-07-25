@@ -1,4 +1,4 @@
-# Exercise | Check the requirements
+# Lab | Check the requirements
 
 1. Docker is a requirement for all the exercises and the entire DevSecOps
    environment configuration, so depending on the operating system the `docker`

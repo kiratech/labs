@@ -1,4 +1,4 @@
-# Exercise | Nexus installation and configuration
+# Lab | Nexus installation and configuration
 
 1. Launch the Nexus instance using the `sonatype/nexus3` container, exposing
    these ports (Host/Container):

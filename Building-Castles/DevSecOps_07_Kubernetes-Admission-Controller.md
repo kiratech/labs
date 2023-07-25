@@ -1,4 +1,4 @@
-# Exercise | Implement a Kubernetes Admission Controller using Trivy
+# Lab | Implement a Kubernetes Admission Controller using Trivy
 
 1. This exercise is base upon the container [https://quay.io/repository/mmul/trivy-admission-webhook](https://quay.io/repository/mmul/trivy-admission-webhook)
    that has been created starting from [this article by Abhijeet Kasurde](https://medium.com/@AbhijeetKasurde/using-kubernetes-admission-controllers-1e5ba5cc30c0).

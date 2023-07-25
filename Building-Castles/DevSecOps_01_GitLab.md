@@ -1,4 +1,4 @@
-# Exercise | GitLab installation and configuration
+# Lab | Install GitLab on a container and configure a runner
 
 1. Launch the GitLab instance using the `gitlab/gitlab-ce:latest` container,
    exposing these ports (Host/Container):

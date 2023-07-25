@@ -1,4 +1,4 @@
-# Exercise | Using GitLab's SAST
+# Lab | Configure GitLab on an example git repository
 
 1. We will need some code to check GitLab's SAST functionalities, so we will
    create two kind of sources.

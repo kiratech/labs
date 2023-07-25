@@ -1,4 +1,4 @@
-# Exercise | Block the pipeline in case of problems
+# Lab | Block the pipeline in case of problems
 
 1. Let's push a faulty source code to our repo:
 

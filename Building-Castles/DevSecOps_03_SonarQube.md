@@ -1,4 +1,4 @@
-# Exercise | SonarQube installation and configuration
+# Lab | SonarQube installation and configuration
 
 1. Launch the SonarQube instance using the `sonarqube:latest` container image,
    exposing these ports (Host/Container):
