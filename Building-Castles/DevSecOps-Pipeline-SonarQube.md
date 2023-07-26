@@ -1,4 +1,4 @@
-# Lab | SonarQube installation and configuration
+# Lab | Install SonarQube and integrate it inside a GitLab pipeline
 
 1. Launch the SonarQube instance using the `sonarqube:latest` container image,
    exposing these ports (Host/Container):
@@ -37,13 +37,13 @@
 
    Click `Expand` button of the `Variables` section, and add:
 
-   - `SONARQUBE_HOST`: http://172.17.0.1:9000
-   - `SONARQUBE_TOKEN`: squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5
+   - `SONAR_HOST_URL`: http://172.17.0.1:9000
+   - `SONAR_TOKEN`: squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5
 
-   The `SONARQUBE_HOST` refers to the IP of the docker host, check
+   The `SONAR_HOST_URL` refers to the IP of the docker host, check
    [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how to get it.
 
-   Ensure that for the `SONARQUBE_TOKEN` variable the `Mask variable` option is
+   Ensure that for the `SONAR_TOKEN` variable the `Mask variable` option is
    selected.
 
 4. Modify the CI lab of `myproject` by involving Sonarqube, adding this cose to
@@ -59,8 +59,8 @@
      image: sonarsource/sonar-scanner-cli:latest
      script:
        - sonar-scanner
-         -Dsonar.host.url=$SONARQUBE_HOST
-         -Dsonar.login=$SONARQUBE_TOKEN
+         -Dsonar.host.url=${SONAR_HOST_URL}
+         -Dsonar.login=${SONAR_TOKEN}
          -Dsonar.projectKey=myproject
      only:
        - main

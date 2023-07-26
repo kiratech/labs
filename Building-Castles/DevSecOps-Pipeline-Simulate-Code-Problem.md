@@ -96,8 +96,8 @@
      image: sonarsource/sonar-scanner-cli:latest
      script:
        - sonar-scanner
-         -Dsonar.host.url=${SONARQUBE_HOST}
-         -Dsonar.login=${SONARQUBE_TOKEN}
+         -Dsonar.host.url=${SONAR_HOST_URL}
+         -Dsonar.login=${SONAR_TOKEN}
          -Dsonar.projectKey=myproject
          -Dsonar.qualitygate.wait=true
      only:
