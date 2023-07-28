@@ -1,4 +1,4 @@
-# Lab | Check the requirements
+# Lab | Set the requirements
 
 1. Docker is a requirement for all the exercises and the entire DevSecOps
    environment configuration, so depending on the operating system the `docker`
@@ -26,16 +26,28 @@
    any other interface on the host.
    To make services reachable between containers it is mandatory to use an IP
    different from `localhost` (`127.0.0.1`).
-   The docker host should have an interface called `docker0`, and its IP address
-   can be identified like this:
+   Since everything will run on the same host, best way to achieve overall
+   reachableness is by creating an IP associated with `lo` interface, like
+   `172.16.99.1`.
 
    ```console
-   > ip address show dev docker0 | grep 'inet ' | awk '{print $2}'
-   172.17.0.1/16
+   > ip address add 172.16.99.1 dev lo
    ```
 
-   This value must be used as a reference for the services configurations.
+   The IP `172.16.99.1` must be used as a reference for the services
+   configurations.
 
-   NOTE: the IP address depends on the machine configuration, so you might want
-   to chose a different IP. It is possible to list all the machine IP using the
-   `ip address show` command.
+   NOTE: you might want to chose a different IP or a different device. It is
+   possible to list all the machine IP using the `ip address show` command.
+
+3. Once the pipeline will be complete, there will be a registry available at the
+   `172.16.99.1:5000` address, usable also by Kubernetes.
+
+   Since we will work on self-signed certificate and will manage Kubernetes
+   using Minikube, this must be started with the proper `--insecure-registries`
+   option.
+   As follows:
+
+   ```console
+   > minikube start --vm-driver=docker --insecure-registry=172.16.99.1:5000
+   ```

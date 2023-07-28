@@ -128,7 +128,7 @@
    INFO: Final Memory: 21M/114M
    INFO: ------------------------------------------------------------------------
    ERROR: Error during SonarScanner execution
-   ERROR: QUALITY GATE STATUS: FAILED - View details on http://172.17.0.1:9000/dashboard?id=myproject
+   ERROR: QUALITY GATE STATUS: FAILED - View details on http://172.16.99.1:9000/dashboard?id=myproject
    ERROR:
    ERROR: Re-run SonarScanner using the -X switch to enable full debug logging.
    ERROR: Job failed: exit code 1

@@ -22,10 +22,10 @@
    ...
    ```
 
-2. Log into SonarQube interface by using `admin`/`admin` credentials at [http://172.17.0.1:9000](http://172.17.0.1:9000)
+2. Log into SonarQube interface by using `admin`/`admin` credentials at [http://172.16.99.1:9000](http://172.16.99.1:9000)
    and the admin password as requested.
 
-   Select the users section at [http://172.17.0.1:9000/admin/users](http://172.17.0.1:9000/admin/users)
+   Select the users section at [http://172.16.99.1:9000/admin/users](http://172.16.99.1:9000/admin/users)
    and under "Tokens" click in the icon.
 
    Create a token named "GitLab" leaving "30 days" as "Expires in" and take note
@@ -33,11 +33,11 @@
 
 3. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
 
-   [http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd)
+   [http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd)
 
    Click `Expand` button of the `Variables` section, and add:
 
-   - `SONAR_HOST_URL`: http://172.17.0.1:9000
+   - `SONAR_HOST_URL`: http://172.16.99.1:9000
    - `SONAR_TOKEN`: squ_a37f1d4c60b980cb91fb5d4fb878d2b96be2ecb5
 
    The `SONAR_HOST_URL` refers to the IP of the docker host, check

@@ -98,7 +98,7 @@
 
    > git config --global init.defaultBranch main
 
-   > git remote add origin ssh://git@172.17.0.1:2222/devsecops/myproject.git
+   > git remote add origin ssh://git@172.16.99.1:2222/devsecops/myproject.git
 
    > git push -u origin main
    Enumerating objects: 3, done.
@@ -127,15 +127,15 @@
    Using the web interface, as `Administrator` user, change the `Custom Git clone
    URL for HTTP(S)` value in the `Visibility and access controls` section at:
 
-   [http://172.17.0.1:8080/admin/application_settings/general](http://172.17.0.1:8080/admin/application_settings/general)
+   [http://172.16.99.1:8080/admin/application_settings/general](http://172.16.99.1:8080/admin/application_settings/general)
 
-   Adding the GitLab IP related url, in this case `http://172.17.0.1:8080`
+   Adding the GitLab IP related url, in this case `http://172.16.99.1:8080`
    (check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how 
    to get the IP host.
 
 5. Get the GitLab runner token registration at:
 
-   [http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd)
+   [http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd)
 
    Expanding the "Runners" section and selecting the three dots beside `New
    project runner` and finally copying the token, which will be something like
@@ -159,7 +159,7 @@
 
    ```console
    > docker exec -it gitlab-runner gitlab-runner register -n \
-     --url http://172.17.0.1:8080 \
+     --url http://172.16.99.1:8080 \
      --registration-token GR1348941uHeDhAB5DDA8r_5xvxsm \
      --executor docker \
      --description "My Docker Runner" \

@@ -70,7 +70,7 @@
 
    ```console
    > sudo mkdir nexus/nexus3/etc/ssl
-   > docker run -it --rm -v $PWD/nexus/nexus3/etc/ssl:/ssl joostdecock/keytool -genkeypair -keystore /ssl/keystore.jks -storepass password -keyalg RSA -keysize 2048 -validity 5000 -keypass password -dname 'CN=172.17.0.1'
+   > docker run -it --rm -v $PWD/nexus/nexus3/etc/ssl:/ssl joostdecock/keytool -genkeypair -keystore /ssl/keystore.jks -storepass password -keyalg RSA -keysize 2048 -validity 5000 -keypass password -dname 'CN=172.16.99.1'
    > sudo chown -R 200:200 nexus/nexus3/etc/ssl/keystore.jks
    ```
 
@@ -91,11 +91,11 @@
    It is then time to complete the installation from the web ui console, by
    logging at:
 
-   [http://172.17.0.1:8081](http://172.17.0.1:8081)
+   [http://172.16.99.1:8081](http://172.16.99.1:8081)
 
    or
 
-   [https://172.17.0.1:9443](https://172.17.0.1:9443) (accepting the autosigned
+   [https://172.16.99.1:9443](https://172.16.99.1:9443) (accepting the autosigned
    certificate)
 
    And complete the installation:
@@ -123,7 +123,7 @@
 2. Test credentials:
 
    ```console
-   > docker login -u admin 172.17.0.1:5000
+   > docker login -u admin 172.16.99.1:5000
    Password: 
    WARNING! Your password will be stored unencrypted in /home/rasca/.docker/config.json.
    Configure a credential helper to remove this warning. See
@@ -134,11 +134,11 @@
 
 3. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
 
-   [http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.17.0.1:8080/devsecops/myproject/-/settings/ci_cd)
+   [http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd](http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd)
 
    Click `Expand` button of the `Variables` section and add:
 
-   - `NEXUS_HOST`: 172.17.0.1:5000
+   - `NEXUS_HOST`: 172.16.99.1:5000
    - `NEXUS_USERNAME`: admin
    - `NEXUS_PASSWORD`: admin123
 
