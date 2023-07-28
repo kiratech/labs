@@ -49,5 +49,7 @@
    As follows:
 
    ```console
-   > minikube start --vm-driver=docker --insecure-registry=172.16.99.1:5000
+   > minikube start --insecure-registry=172.16.99.1:5000
    ```
+
+   Check **NOTE 3** of the `Common/Kubernetes-Install-Minikube.md` lab.

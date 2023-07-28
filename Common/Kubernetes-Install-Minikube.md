@@ -1,4 +1,4 @@
-# Exercise | Install Minikube | Solution
+# Lab | Install Minikube
 
 1. Your system should have, at least:
    - 2 CPUs or more
@@ -52,6 +52,14 @@
    ```console
    > adduser <you user name> docker
    > newgrp docker
+   ```
+
+   **NOTE 3**: if you need to enable a specific insecure registry in your
+   minikube installation, it is possible to pass the `--insecure-registries`
+   options:
+
+   ```console
+   > minikube start --insecure-registry=172.16.99.1:5000
    ```
 
 5. Download the `kubectl` command:
