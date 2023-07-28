@@ -1,15 +1,26 @@
 # Lab | Nexus installation, configuration and pipeline integration
 
-1. Launch the Nexus instance using the `sonatype/nexus3` container, exposing
-   these ports (Host/Container):
+1. Prepare the environment on which the Nexus container will run, by creating
+   and assigning to the user `nexus` (with uid `200`) the `nexus` directory:
+
+   ```console
+   > mkdir nexus
+   > sudo chown 200:200 nexus
+   ```
+
+   Then it will be possible to launch the Nexus instance using the
+   `sonatype/nexus3` containera, exposing these ports (Host/Container):
    - 8081:8081
+   - 9443:9443
    - 5000:5000
 
    ```console
    > docker run --detach \
      --name nexus \
      --publish 8081:8081 \
+     --publish 9443:9443 \
      --publish 5000:5000 \
+     --volume $PWD/nexus:/opt/sonatype/sonatype-work \
      sonatype/nexus3
    Unable to find image 'sonatype/nexus3:latest' locally
    latest: Pulling from sonatype/nexus3
@@ -25,25 +36,67 @@
    1bfde8b8401841bb82e9c00ab6e0efc90860dbbe44771e74cc13e4218d4da162
    ```
 
-   Check the progress:
+   Check the progress until the service is `Started`:
 
    ```console
    > docker logs -f nexus
-   2023-06-21 10:27:40,499+0000 INFO  [FelixStartLevel] *SYSTEM org.sonatype.nexus.pax.logging.NexusLogActivator - start
    ...
+   -------------------------------------------------
+
+   Started Sonatype Nexus OSS 3.56.0-01
+
+   -------------------------------------------------
    ```
 
-   Get the installation password:
+   Now that the working directory was populated by the initial Nexus run, the
+   container must be stopped:
 
    ```console
-   > docker exec nexus cat /nexus-data/admin.password
+   > docker stop nexus
+   ```
+
+   So that it will be possible to edit the `nexus/nexus3/etc/nexus.properties`
+   to enable `https` (you will need sudo because files are owned by a user with
+   uid `200`):
+
+   ```console
+   > cat nexus/nexus3/etc/nexus.properties
+   application-port-ssl=9443
+   nexus-args=${jetty.etc}/jetty.xml,${jetty.etc}/jetty-http.xml,${jetty.etc}/jetty-https.xml,${jetty.etc}/jetty-requestlog.xml
+   ssl.etc=${karaf.data}/etc/ssl
+   ```
+
+   Create the certificate:
+
+   ```console
+   > sudo mkdir nexus/nexus3/etc/ssl
+   > docker run -it --rm -v $PWD/nexus/nexus3/etc/ssl:/ssl joostdecock/keytool -genkeypair -keystore /ssl/keystore.jks -storepass password -keyalg RSA -keysize 2048 -validity 5000 -keypass password -dname 'CN=172.17.0.1'
+   > sudo chown -R 200:200 nexus/nexus3/etc/ssl/keystore.jks
+   ```
+
+   And then start again the container:
+
+   ```console
+   > docker start nexus
+   ```
+
+   After the start (check logs as before), get the installation password:
+
+   ```console
+   > sudo cat nexus/nexus3/admin.password
    f76d718e-a75c-4a62-8c0a-09ca57e8a6b9
    ```
 
    In this case credentials will be `admin/f76d718e-a75c-4a62-8c0a-09ca57e8a6b9`.
-   It is then time to complete the installation from the web ui console, by logging at:
+   It is then time to complete the installation from the web ui console, by
+   logging at:
 
    [http://172.17.0.1:8081](http://172.17.0.1:8081)
+
+   or
+
+   [https://172.17.0.1:9443](https://172.17.0.1:9443) (accepting the autosigned
+   certificate)
 
    And complete the installation:
 
@@ -52,16 +105,16 @@
    - Configure Anonymous Access -> Enable anonymous access
    - Finish
 
-   Last, create a new docker repository by selecting the wheel icon and then
+   Then, create a new docker repository by selecting the wheel icon and then
    `Repository` -> `Create repository` -> `docker (hosted)` with these
    specifications:
 
    - Name: myproject
-     Select `Create an HTTP connector at specified port. Normally used if the server is behind a secure proxy.` -> 5000
+     Select `Create an HTTPS connector at specified port. Normally used if the server is behind a secure proxy.` -> 5000
      Select `Allow anonymous docker pull ( Docker Bearer Token Realm required )`
 
-   Once `Create repository` is pressed, then the docker repo will be available at
-   the 5000 port.
+   Once `Create repository` is pressed, then the docker repo will be available
+   at the 5000 port.
 
    Last but not least the Docker Bearer Token needs to be activated, from the
    `Security` -> `Realms` section, click on + beside the `Docker Bearer Token` 
