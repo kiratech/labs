@@ -1,4 +1,4 @@
-# Exercise | Mounting a filesystem | Solutions
+# Exercise | Mounting a filesystem | Solution
 
 1. View active mounts:
 

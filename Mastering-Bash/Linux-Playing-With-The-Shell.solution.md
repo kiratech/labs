@@ -1,4 +1,4 @@
-# Exercise | Playing With The Shell | Solutions
+# Exercise | Playing With The Shell | Solution
 
 1. Supposing your user is "kirater" and your machine is "machine":
 
