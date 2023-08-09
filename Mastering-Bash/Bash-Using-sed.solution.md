@@ -5,7 +5,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
 1. Substitute first match of `root` with `love`:
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/root/love/'
+   [kirater@machine ~]$ cat results.txt | sed 's/root/love/'
    test1:x:1000:100:Utenza di test1:/home/test1:/bin/bash
    system1:x:1001:100:Utenza di test2:/home/system1:/bin/bash
    love:x:0:0:root:/root:/bin/bash
@@ -21,7 +21,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
 2. Substitute every match of `root` with `love` (remember the option `g`):
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/root/love/g'
+   [kirater@machine ~]$ cat results.txt | sed 's/root/love/g'
    test1:x:1000:100:Utenza di test1:/home/test1:/bin/bash
    system1:x:1001:100:Utenza di test2:/home/system1:/bin/bash
    love:x:0:0:love:/love:/bin/bash
@@ -37,7 +37,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
 3. Substitute every digit with a dot (remember range):
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/[0-9]/./g'
+   [kirater@machine ~]$ cat results.txt | sed 's/[0-9]/./g'
    test.:x:....:...:Utenza di test.:/home/test.:/bin/bash
    system.:x:....:...:Utenza di test.:/home/system.:/bin/bash
    root:x:.:.:root:/root:/bin/bash
@@ -53,7 +53,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
 4. Substitute every number with a single dot (remember escape in pattern):
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g'
+   [kirater@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g'
    test.:x:.:.:Utenza di test.:/home/test.:/bin/bash
    system.:x:.:.:Utenza di test.:/home/system.:/bin/bash
    root:x:.:.:root:/root:/bin/bash
@@ -70,7 +70,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
    (substitute with empty string):
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g' | sed 's/:\.//g'
+   [kirater@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g' | sed 's/:\.//g'
    test.:x:Utenza di test.:/home/test.:/bin/bash
    system.:x:Utenza di test.:/home/system.:/bin/bash
    root:x:root:/root:/bin/bash
@@ -86,7 +86,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
    or equivalent:
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g ; s/:\.//g'
+   [kirater@machine ~]$ cat results.txt | sed 's/[0-9]\+/./g ; s/:\.//g'
    cat results.txt | sed 's/[0-9]\+/./g ; s/:\.//g'
    test.:x:Utenza di test.:/home/test.:/bin/bash
    system.:x:Utenza di test.:/home/system.:/bin/bash
@@ -103,7 +103,7 @@ Use the file `results.txt` from the [Bash-Outputs.md](Bash-Outputs.md) exercise.
 6. Substitute until the `:` with the string `<s_user>` if line begins with `s`
 
    ```console
-   [mmul@machine ~]$ cat results.txt | sed 's/^s[^:]\+/<s_user>/'
+   [kirater@machine ~]$ cat results.txt | sed 's/^s[^:]\+/<s_user>/'
    test1:x:1000:100:Utenza di test1:/home/test1:/bin/bash
    <s_user>:x:1001:100:Utenza di test2:/home/system1:/bin/bash
    root:x:0:0:root:/root:/bin/bash

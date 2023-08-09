@@ -1,9 +1,9 @@
 # Exercise | Writing Your First Init Script | Solution
 
-1. Supposing your user is "mmul" and your machine is "machine":
+1. Suppose your user is `kirater` and your machine is `machine`:
 
    ```console
-   > ssh mmul@machine
+   > ssh kirater@machine
    ```
 
 2-7. Steps from 2 to 7 build a script that will look like this:
