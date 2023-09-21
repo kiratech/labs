@@ -24,8 +24,8 @@
      namespace: trivy-system
    spec:
      replicas: 1
-     selector:                                                                     
-       matchLabels:                                                                
+     selector:
+       matchLabels:
          app: trivy-admission-webhook
      template:
        metadata:
@@ -88,13 +88,93 @@
      timeoutSeconds: 30
    ```
 
-3. The service will rely on certificates, so we can use the one used by Kuberentes,
-   downloading them from the server:
+3. In Minikube we will need to generate a certificate for the webhook service
+   and sign it with the CA certificate coming from the Minikube installation:
+
+   ```console
+   > openssl genrsa -out webhook.key 2048
+
+   > servicename=trivy-admission-webhook.trivy-system.svc
+
+   > openssl req -new -key webhook.key -out webhook.csr -subj "/CN=$servicename"
+
+   > openssl x509 -req -extfile <(printf "subjectAltName=DNS:$servicename") -days 3650 -in webhook.csr -CA .minikube/ca.crt -CAkey .minikube/ca.key -CAcreateserial -out webhook.crt
+   Signature ok
+   subject=CN = trivy-admission-webhook.trivy-system.svc
+   Getting CA Private Key
+
+   > kubectl -n trivy-system create secret tls trivy-admission-webhook-certs --key="webhook.key" --cert="webhook.crt"
+   secret/trivy-admission-webhook-certs created
+
+   > kubectl create -f trivy-admission-webhook.yaml
+   deployment.apps/trivy-admission-webhook created
+   service/trivy-admission-webhook created
+
+   > kubectl -n trivy-system get all
+   NAME                                           READY   STATUS    RESTARTS   AGE
+   pod/trivy-admission-webhook-6d965d5c78-cwxnv   1/1     Running   0          13m
+
+   NAME                              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+   service/trivy-admission-webhook   ClusterIP   10.98.90.165   <none>        443/TCP   20m
+
+   NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
+   deployment.apps/trivy-admission-webhook   1/1     1            1           20m
+
+   NAME                                                 DESIRED   CURRENT   READY   AGE
+   replicaset.apps/trivy-admission-webhook-6d965d5c78   1         1         1       20m
+
+   > kubectl create -f taw-validating-webhook-configuration.yaml
+
+   > kubectl get ValidatingWebhookConfiguration trivy-admission-webhook.trivy-system.svc
+   NAME                                       WEBHOOKS   AGE
+   trivy-admission-webhook.trivy-system.svc   1          7m23s
+   ```
+
+4. Doing effective tests is as simple as this:
+
+   ```console
+   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-latest --image public.ecr.aws/nginx/nginx:latest
+   deployment.apps/nginx-latest created
+
+   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-insecure --image public.ecr.aws/nginx/nginx:1.18
+   deployment.apps/nginx-insecure created
+
+   course@ubuntu-jammy:~$ kubectl -n myns get all
+   NAME                                READY   STATUS    RESTARTS   AGE
+   pod/nginx-latest-8586ccc94b-9slg8   1/1     Running   0          103s
+
+   NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+   deployment.apps/nginx-insecure   0/1     0            0           94s
+   deployment.apps/nginx-latest     1/1     1            1           103s
+
+   NAME                                        DESIRED   CURRENT   READY   AGE
+   replicaset.apps/nginx-insecure-5785468788   1         0         0       94s
+   replicaset.apps/nginx-latest-8586ccc94b     1         1         1       103s
+
+   course@ubuntu-jammy:~$ kubectl -n myns get events --sort-by='.metadata.creationTimestamp' -A
+   NAMESPACE      LAST SEEN   TYPE      REASON                    OBJECT                                          MESSAGE
+   ...
+   ...
+   myns           25s         Normal    ScalingReplicaSet         deployment/nginx-latest                         Scaled up replica set nginx-latest-8586ccc94b to 1
+   myns           23s         Normal    SuccessfulCreate          replicaset/nginx-latest-8586ccc94b              Created pod: nginx-latest-8586ccc94b-9slg8
+   myns           23s         Normal    Scheduled                 pod/nginx-latest-8586ccc94b-9slg8               Successfully assigned myns/nginx-latest-8586ccc94b-9slg8 to minikube
+   myns           22s         Normal    Pulling                   pod/nginx-latest-8586ccc94b-9slg8               Pulling image "nginx:latest"
+   myns           21s         Normal    Started                   pod/nginx-latest-8586ccc94b-9slg8               Started container nginx
+   myns           21s         Normal    Created                   pod/nginx-latest-8586ccc94b-9slg8               Created container nginx
+   myns           21s         Normal    Pulled                    pod/nginx-latest-8586ccc94b-9slg8               Successfully pulled image "nginx:latest" in 1.291453932s (1.291487398s including waiting)
+   myns           16s         Normal    ScalingReplicaSet         deployment/nginx-insecure                       Scaled up replica set nginx-insecure-5785468788 to 1
+   myns           1s          Warning   FailedCreate              replicaset/nginx-insecure-5785468788            Error creating: admission webhook "trivy-admission-webhook.trivy-system.svc" denied the request: Not all containers secure, failing ...
+   ```
+
+5. Bonus: doing the same in a multi node Kubernetes installation.
+
+   As we said, the service will rely on certificates, so we can use the one used
+   by Kuberentes, downloading them from the server:
 
    ```console
    > scp kubernetes-1:ca* .
    Warning: Permanently added 'kubernetes-1' (ED25519) to the list of known hosts.
-   ca.crt                                             100% 1099     1.4MB/s   00:00    
+   ca.crt                                             100% 1099     1.4MB/s   00:00
    ca.key                                             100% 1675     2.4MB/s   00:00
    ```
 
@@ -102,8 +182,11 @@
 
    ```console
    > openssl genrsa -out taw-webhook.key 2048
+
    > servicename=trivy-admission-webhook.trivy-system.svc
+
    > openssl req -new -key taw-webhook.key -out taw-webhook.csr -subj "/CN=$servicename"
+
    > openssl x509 -req -extfile <(printf "subjectAltName=DNS:$servicename") -days 3650 -in taw-webhook.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out taw-webhook.crt
    Certificate request self-signature ok
    subject=CN = trivy-admission-webhook.trivy-system.svc
@@ -122,17 +205,17 @@
    > kubectl create -f trivy-admission-webhook.yaml
    deployment.apps/trivy-admission-webhook created
    ...
-   
+
    rasca@catastrofe [~/Labs/trivy-wa]> kubectl -n trivy-system get all -l app=trivy-admission-webhook
    NAME                                           READY   STATUS    RESTARTS   AGE
    pod/trivy-admission-webhook-7c888d7d86-jsrhh   1/1     Running   0          73s
-   
+
    NAME                              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
    service/trivy-admission-webhook   ClusterIP   10.111.238.91   <none>        443/TCP   18h
-   
+
    NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
    deployment.apps/trivy-admission-webhook   1/1     1            1           73s
-   
+
    NAME                                                 DESIRED   CURRENT   READY   AGE
    replicaset.apps/trivy-admission-webhook-7c888d7d86   1         1         1       73s
    ```
@@ -142,9 +225,9 @@
    certificate generation:
 
    ```console
-   > kubectl create -f taw-validating-webhook-configuration.yaml 
+   > kubectl create -f taw-validating-webhook-configuration.yaml
    validatingwebhookconfiguration.admissionregistration.k8s.io/trivy-admission-webhook.trivy-system.svc created
-   
+
    > export CABUNDLE=$(cat ca.crt|base64 -w 0)
 
    > export JSONPATCH="{\"webhooks\":[{\"name\":\"trivy-admission-webhook.trivy-system.svc\", \"clientConfig\":{\"caBundle\":\"$CABUNDLE\"}}]}"
@@ -152,20 +235,20 @@
    > kubectl patch validatingwebhookconfigurations.admissionregistration.k8s.io trivy-admission-webhook.trivy-system.svc --patch="$JSONPATCH"
    ```
 
-4. Doing effective tests is as simple as this:
+6. Same tests can be made:
 
    ```console
    rasca@catastrofe [~/Labs/trivy-wa]> kubectl -n myns create deployment nginx-latest --image public.ecr.aws/nginx/nginx:latest
    deployment.apps/nginx-latest created
-   
+
    rasca@catastrofe [~/Labs/trivy-wa]> kubectl -n myns create deployment nginx-insecure --image public.ecr.aws/nginx/nginx:1.18
    deployment.apps/nginx-insecure created
    ```
-   
+
    The two used images are different because one has CRITICAL vulnerabilities
    (`nginx:1.18`) and the `latest` not.
    So the events sequence will be:
-   
+
    ```console
    rasca@catastrofe [~/Labs/trivy-wa]> kubectl -n myns get events --sort-by='.metadata.creationTimestamp' -A
    NAMESPACE      LAST SEEN   TYPE      REASON              OBJECT                                          MESSAGE
@@ -179,80 +262,4 @@
    myns           2m4s        Normal    Pulled              pod/nginx-latest-785b998d5d-66tvk               Successfully pulled image "public.ecr.aws/nginx/nginx:latest" in 831.767789ms (831.77442ms including waiting)
    myns           2m4s        Normal    Created             pod/nginx-latest-785b998d5d-66tvk               Created container nginx
    myns           2m4s        Normal    Started             pod/nginx-latest-785b998d5d-66tvk               Started container nginx
-   ```
-
-5. Bonus: doing everything in Minikube:
-
-   ```console
-   course@ubuntu-jammy:~$ openssl genrsa -out webhook.key 2048
-   course@ubuntu-jammy:~$ servicename=trivy-admission-webhook.trivy-system.svc
-   course@ubuntu-jammy:~$ openssl req -new -key webhook.key -out webhook.csr -subj "/CN=$servicename"
-   course@ubuntu-jammy:~$ openssl x509 -req -extfile <(printf "subjectAltName=DNS:$servicename") -days 3650 -in webhook.csr -CA .minikube/ca.crt -CAkey .minikube/ca.key -CAcreateserial -out webhook.crt
-   Certificate request self-signature ok
-   subject=CN = trivy-admission-webhook.trivy-system.svc
-   
-   course@ubuntu-jammy:~$ kubectl create namespace trivy-system
-   namespace/trivy-system created
-   
-   course@ubuntu-jammy:~$ kubectl -n trivy-system create secret tls trivy-admission-webhook-certs --key="webhook.key" --cert="webhook.crt"
-   secret/trivy-admission-webhook-certs created
-   
-   course@ubuntu-jammy:~$ kubectl create -f trivy-admission-webhook.yaml
-   deployment.apps/trivy-admission-webhook created
-   service/trivy-admission-webhook created
-   
-   course@ubuntu-jammy:~$ kubectl -n trivy-system get all
-   NAME                                           READY   STATUS    RESTARTS   AGE
-   pod/trivy-admission-webhook-6d965d5c78-cwxnv   1/1     Running   0          13m
-   
-   NAME                              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-   service/trivy-admission-webhook   ClusterIP   10.98.90.165   <none>        443/TCP   20m
-   
-   NAME                                      READY   UP-TO-DATE   AVAILABLE   AGE
-   deployment.apps/trivy-admission-webhook   1/1     1            1           20m
-   
-   NAME                                                 DESIRED   CURRENT   READY   AGE
-   replicaset.apps/trivy-admission-webhook-6d965d5c78   1         1         1       20m
-   
-   course@ubuntu-jammy:~$ kubectl create -f webhook.yaml           
-   
-   course@ubuntu-jammy:~$ kubectl get ValidatingWebhookConfiguration trivy-admission-webhook.trivy-system.svc
-   NAME                                       WEBHOOKS   AGE
-   trivy-admission-webhook.trivy-system.svc   1          7m23s
-   ```
-
-   Same tests can be made:
-
-   ```console
-   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-latest --image public.ecr.aws/nginx/nginx:latest
-   deployment.apps/nginx-latest created
-   
-   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-insecure --image public.ecr.aws/nginx/nginx:1.18
-   deployment.apps/nginx-insecure created
-   
-   course@ubuntu-jammy:~$ kubectl -n myns get all
-   NAME                                READY   STATUS    RESTARTS   AGE
-   pod/nginx-latest-8586ccc94b-9slg8   1/1     Running   0          103s
-   
-   NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
-   deployment.apps/nginx-insecure   0/1     0            0           94s
-   deployment.apps/nginx-latest     1/1     1            1           103s
-   
-   NAME                                        DESIRED   CURRENT   READY   AGE
-   replicaset.apps/nginx-insecure-5785468788   1         0         0       94s
-   replicaset.apps/nginx-latest-8586ccc94b     1         1         1       103s
-   
-   course@ubuntu-jammy:~$ kubectl -n myns get events --sort-by='.metadata.creationTimestamp' -A
-   NAMESPACE      LAST SEEN   TYPE      REASON                    OBJECT                                          MESSAGE
-   ...
-   ...
-   myns           25s         Normal    ScalingReplicaSet         deployment/nginx-latest                         Scaled up replica set nginx-latest-8586ccc94b to 1
-   myns           23s         Normal    SuccessfulCreate          replicaset/nginx-latest-8586ccc94b              Created pod: nginx-latest-8586ccc94b-9slg8
-   myns           23s         Normal    Scheduled                 pod/nginx-latest-8586ccc94b-9slg8               Successfully assigned myns/nginx-latest-8586ccc94b-9slg8 to minikube
-   myns           22s         Normal    Pulling                   pod/nginx-latest-8586ccc94b-9slg8               Pulling image "nginx:latest"
-   myns           21s         Normal    Started                   pod/nginx-latest-8586ccc94b-9slg8               Started container nginx
-   myns           21s         Normal    Created                   pod/nginx-latest-8586ccc94b-9slg8               Created container nginx
-   myns           21s         Normal    Pulled                    pod/nginx-latest-8586ccc94b-9slg8               Successfully pulled image "nginx:latest" in 1.291453932s (1.291487398s including waiting)
-   myns           16s         Normal    ScalingReplicaSet         deployment/nginx-insecure                       Scaled up replica set nginx-insecure-5785468788 to 1
-   myns           1s          Warning   FailedCreate              replicaset/nginx-insecure-5785468788            Error creating: admission webhook "trivy-admission-webhook.trivy-system.svc" denied the request: Not all containers secure, failing ...
    ```
