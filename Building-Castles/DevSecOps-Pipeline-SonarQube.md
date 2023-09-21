@@ -2,13 +2,16 @@
 
 1. Launch the SonarQube instance using the `sonarqube:latest` container image,
    exposing these ports (Host/Container):
+
    - 9000:9000
 
    ```console
+   > cd ~
+
    > docker run --detach \
      --name sonarqube \
      --publish 9000:9000 \
-     sonarqube:latest
+     sonarqube:lts
    ```
 
    Check the progresses, until the web interface comes up:
@@ -46,8 +49,8 @@
    Ensure that for the `SONAR_TOKEN` variable the `Mask variable` option is
    selected.
 
-4. Modify the CI lab of `myproject` by involving Sonarqube, adding this cose to
-   `.gitlab-ci.yml`:
+4. Modify the CI lab of `myproject` by involving Sonarqube, adding this content
+   to `.gitlab-ci.yml`:
 
    ```yaml
    stages:
@@ -60,7 +63,7 @@
      script:
        - sonar-scanner
          -Dsonar.host.url=${SONAR_HOST_URL}
-         -Dsonar.login=${SONAR_TOKEN}
+         -Dsonar.token=${SONAR_TOKEN}
          -Dsonar.projectKey=myproject
      only:
        - main

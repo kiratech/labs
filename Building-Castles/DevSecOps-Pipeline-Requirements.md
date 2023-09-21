@@ -7,7 +7,7 @@
    The docker daemon must be in execution, check it by:
 
    ```console
-   > systemctl status docker
+   > sudo systemctl status docker
    ● docker.service - Docker Application Container Engine
         Loaded: loaded (/lib/systemd/system/docker.service; disabled; vendor preset: enabled)
         Active: active (running) since Wed 2023-06-21 10:26:41 CEST; 4h 8min ago
@@ -31,7 +31,7 @@
    `172.16.99.1`.
 
    ```console
-   > ip address add 172.16.99.1 dev lo
+   > sudo ip address add 172.16.99.1 dev lo
    ```
 
    The IP `172.16.99.1` must be used as a reference for the services
@@ -40,7 +40,23 @@
    NOTE: you might want to chose a different IP or a different device. It is
    possible to list all the machine IP using the `ip address show` command.
 
-3. Once the pipeline will be complete, there will be a registry available at the
+3. We will configure a registry by using `Nexus` via SSL, by using a self signed
+   certificate. To make the repository accepted by the docker client, it must be
+   added (as `root`) to the `/etc/docker/daemon.json` file, with this content:
+
+   ```json
+   {
+          "insecure-registries" : ["172.16.99.1:5000"]
+   }
+   ```
+
+   The docker daemon must be restarted after this change:
+
+   ```console
+   > sudo systemctl restart docker
+   ```
+
+4. Once the pipeline will be complete, there will be a registry available at the
    `172.16.99.1:5000` address, usable also by Kubernetes.
 
    Since we will work on self-signed certificate and will manage Kubernetes

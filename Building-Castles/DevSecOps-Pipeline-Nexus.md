@@ -4,12 +4,16 @@
    and assigning to the user `nexus` (with uid `200`) the `nexus` directory:
 
    ```console
+   > cd ~
+
    > mkdir nexus
+
    > sudo chown 200:200 nexus
    ```
 
    Then it will be possible to launch the Nexus instance using the
    `sonatype/nexus3` containera, exposing these ports (Host/Container):
+
    - 8081:8081
    - 9443:9443
    - 5000:5000
@@ -24,13 +28,13 @@
      sonatype/nexus3
    Unable to find image 'sonatype/nexus3:latest' locally
    latest: Pulling from sonatype/nexus3
-   36c12cb044ac: Pull complete 
-   8a1b09f0eced: Pull complete 
-   f47ff8368d44: Pull complete 
-   1f37eeb9a088: Pull complete 
-   4b6419f9a540: Pull complete 
-   cd8e246a9663: Pull complete 
-   68721705c831: Pull complete 
+   36c12cb044ac: Pull complete
+   8a1b09f0eced: Pull complete
+   f47ff8368d44: Pull complete
+   1f37eeb9a088: Pull complete
+   4b6419f9a540: Pull complete
+   cd8e246a9663: Pull complete
+   68721705c831: Pull complete
    Digest: sha256:88044c8cdbbf1fea42b65b6c785bb88e4e2b2e96b3becd2bfce22f481216a951
    Status: Downloaded newer image for sonatype/nexus3:latest
    1bfde8b8401841bb82e9c00ab6e0efc90860dbbe44771e74cc13e4218d4da162
@@ -70,7 +74,18 @@
 
    ```console
    > sudo mkdir nexus/nexus3/etc/ssl
-   > docker run -it --rm -v $PWD/nexus/nexus3/etc/ssl:/ssl joostdecock/keytool -genkeypair -keystore /ssl/keystore.jks -storepass password -keyalg RSA -keysize 2048 -validity 5000 -keypass password -dname 'CN=172.16.99.1'
+
+   > docker run -it --rm -v $PWD/nexus/nexus3/etc/ssl:/ssl joostdecock/keytool \
+     -genkeypair \
+     -keystore /ssl/keystore.jks \
+     -storepass password \
+     -keyalg RSA \
+     -keysize 2048 \
+     -validity 5000 \
+     -keypass password \
+     -dname 'CN=172.16.99.1' \
+     -ext 'SAN=IP:172.16.99.1'
+
    > sudo chown -R 200:200 nexus/nexus3/etc/ssl/keystore.jks
    ```
 
@@ -110,27 +125,32 @@
    specifications:
 
    - Name: myproject
-     Select `Create an HTTPS connector at specified port. Normally used if the server is behind a secure proxy.` -> 5000
-     Select `Allow anonymous docker pull ( Docker Bearer Token Realm required )`
+   - Select `Create an HTTPS connector at specified port. Normally used if the server is behind a secure proxy.` -> 5000
+   - Select `Allow anonymous docker pull ( Docker Bearer Token Realm required )`
 
    Once `Create repository` is pressed, then the docker repo will be available
    at the 5000 port.
 
    Last but not least the Docker Bearer Token needs to be activated, from the
-   `Security` -> `Realms` section, click on + beside the `Docker Bearer Token` 
+   `Security` -> `Realms` section, click on + beside the `Docker Bearer Token`
    so that it becomes part of the `Active` group.
 
 2. Test credentials:
 
    ```console
    > docker login -u admin 172.16.99.1:5000
-   Password: 
+   Password:
    WARNING! Your password will be stored unencrypted in /home/rasca/.docker/config.json.
    Configure a credential helper to remove this warning. See
    https://docs.docker.com/engine/reference/commandline/login/#credentials-store
-   
+
    Login Succeeded
    ```
+
+   Remember to add the `172.16.99.1:5000` registry to the docker insecure
+   registries list under `/etc/docker/daemon.json`.
+   Check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md)
+   for details.
 
 3. Move to the GitLab interface in the `CI/CD Settings` of `myproject` at:
 
@@ -151,17 +171,17 @@
 4. Create a `Dockerfile` inside `myproject` with these contents:
 
    ```dockerfile
-   FROM busybox                                                                    
-                                                                                
-   ENV NCAT_MESSAGE "Container test"                                               
-   ENV NCAT_HEADER "HTTP/1.1 200 OK"                                               
-   ENV NCAT_PORT "8888"                                                            
-                                                                                   
-   RUN addgroup -S nonroot && \                                                    
-       adduser -S nonroot -G nonroot                                               
-                                                                                   
-   USER nonroot                                                                    
-                                                                                   
+   FROM busybox
+
+   ENV NCAT_MESSAGE "Container test"
+   ENV NCAT_HEADER "HTTP/1.1 200 OK"
+   ENV NCAT_PORT "8888"
+
+   RUN addgroup -S nonroot && \
+       adduser -S nonroot -G nonroot
+
+   USER nonroot
+
    CMD /bin/nc -l -k -p ${NCAT_PORT} -e /bin/echo -e "${NCAT_HEADER}\n\n${NCAT_MESSAGE}"
    ```
 
@@ -172,18 +192,18 @@
      ...
      - build
      - publish
-   
+
    variables:
      ...
      ...
      DOCKER_IMAGE_NAME: ncat_http_msg_port
-   
+
    build_job:
      stage: build
      script:
        - echo "Building myproject"
        - docker build -t ${DOCKER_IMAGE_NAME} .
-   
+
    publish_job:
      stage: publish
      script:
@@ -207,7 +227,7 @@
    ```
 
    And then follow the progress from the GitLab interface:
- 
+
    ![DevSecOps-Pipeline-Nexus-GitLab-CI.png](images/DevSecOps-Pipeline-Nexus-GitLab-CI.png)
 
    The final result should be the presence of the image inside the Nexus

@@ -10,17 +10,26 @@
            int x = 5;
            int y = 0;
            int result = x / y; // Division by zero error
-
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
            logger.log("Result: " + result);
        }
    }
    ```
 
-   In this example, the code attempts to divide the variable x by y, which is
-   initialized to 0. This division by zero operation will result in an exception
-   at runtime, causing the program to crash or behave unexpectedly.
+   In this example, the code attempts multiple times to divide the variable `x`
+   by `y`, which is initialized to 0. This division by zero operation will
+   result in an exception at runtime, causing the program to crash or behave
+   unexpectedly and the code repetition is obviously wrong.
 
-   SonarQube can identify this issue and raise a warning or error, indicating a
+   SonarQube can identify the issues and raise a warning or error, indicating a
    potential bug or vulnerability in the code.
 
    SonarQube is designed to analyze source code for various issues such as bugs,
@@ -41,6 +50,15 @@
        public static void main(String[] args) {
            int x = 5;
            int y = 0;
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
+           int result = x / y; // Division by zero error
            int result = x / y; // Division by zero error
 
            logger.log("Result: " + result);
@@ -97,7 +115,7 @@
      script:
        - sonar-scanner
          -Dsonar.host.url=${SONAR_HOST_URL}
-         -Dsonar.login=${SONAR_TOKEN}
+         -Dsonar.token=${SONAR_TOKEN}
          -Dsonar.projectKey=myproject
          -Dsonar.qualitygate.wait=true
      only:
@@ -134,7 +152,7 @@
    ERROR: Job failed: exit code 1
    ```
 
-4. To close the activity, let's fix our code, by removing the problem, the new
+4. To close the activity, let's fix our code, by removing the problems. The new
    code should be something like this:
 
    ```java
@@ -151,7 +169,7 @@
    }
    ```
 
-   And push it to see if the quality gate gets fixed:
+   By pushing it, we can see if the quality gate gets fixed:
 
    ```console
    > git add . && git commit -m "Fix faulty code"

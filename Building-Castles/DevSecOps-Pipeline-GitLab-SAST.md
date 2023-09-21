@@ -1,11 +1,14 @@
 # Lab | Configure GitLab on an example git repository
 
-1. We will need some code to check GitLab's SAST functionalities, so we will
-   create two kind of sources.
+1. We will need some code inside `myproject` to check GitLab's SAST
+   functionalities, so we will create two kind of sources.
 
    A faulty Kubernetes Pod manifest:
 
    ```console
+   > pwd
+   /home/kirater/myproject
+
    > mkdir manifests
 
    > cat <<EOF > manifests/Pod.yml

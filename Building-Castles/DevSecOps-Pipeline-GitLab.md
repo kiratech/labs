@@ -92,6 +92,10 @@
 
    > git init
 
+   > git config --global user.email "devsecops@example.com"
+
+   > git config --global user.name "devsecops"
+
    > echo 'My DevSecOps repo' > README.md
 
    > git add . && git commit -m "Initial commit"
@@ -130,8 +134,8 @@
    [http://172.16.99.1:8080/admin/application_settings/general](http://172.16.99.1:8080/admin/application_settings/general)
 
    Adding the GitLab IP related url, in this case `http://172.16.99.1:8080`
-   (check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md) to find out how 
-   to get the IP host.
+   check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md)
+   to find out how to get the IP host.
 
 5. Get the GitLab runner token registration at:
 
