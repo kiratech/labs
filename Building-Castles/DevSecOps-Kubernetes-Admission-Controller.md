@@ -5,16 +5,12 @@
    Everything relies on Kubernetes [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#webhook-configuration).
 
 2. First we will create the initial yaml files for two basic elements: the
-   webhook and its configuration.
+   webhook application and the webhook configuration.
 
-   The webhook deployment will be in `trivy-admission-webhook.yaml`:
+   The webhook application will be a deployment declared in
+   `trivy-admission-webhook.yaml`:
 
    ```yaml
-   apiVersion: v1
-   kind: Namespace
-   metadata:
-     name: trivy-system
-   ---
    apiVersion: apps/v1
    kind: Deployment
    metadata:
@@ -62,7 +58,8 @@
        app: trivy-admission-webhook
    ```
 
-   The webhook configuration will be in `taw-validating-webhook-configuration.yaml`:
+   The webhook configuration will be in
+   `taw-validating-webhook-configuration.yaml`:
 
    ```yaml
    apiVersion: admissionregistration.k8s.io/v1
@@ -102,7 +99,12 @@
    Signature ok
    subject=CN = trivy-admission-webhook.trivy-system.svc
    Getting CA Private Key
+   ```
 
+   The certificate will be part of a service, mounted by the webhook
+   application:
+
+   ```console
    > kubectl -n trivy-system create secret tls trivy-admission-webhook-certs --key="webhook.key" --cert="webhook.crt"
    secret/trivy-admission-webhook-certs created
 
@@ -110,7 +112,7 @@
    deployment.apps/trivy-admission-webhook created
    service/trivy-admission-webhook created
 
-   > kubectl -n trivy-system get all
+   > kubectl -n trivy-system get all -l app=trivy-admission-webhook
    NAME                                           READY   STATUS    RESTARTS   AGE
    pod/trivy-admission-webhook-6d965d5c78-cwxnv   1/1     Running   0          13m
 
@@ -122,7 +124,11 @@
 
    NAME                                                 DESIRED   CURRENT   READY   AGE
    replicaset.apps/trivy-admission-webhook-6d965d5c78   1         1         1       20m
+   ```
 
+   The last element to be created will be the webhook element itself:
+
+   ```console
    > kubectl create -f taw-validating-webhook-configuration.yaml
 
    > kubectl get ValidatingWebhookConfiguration trivy-admission-webhook.trivy-system.svc
@@ -130,16 +136,22 @@
    trivy-admission-webhook.trivy-system.svc   1          7m23s
    ```
 
-4. Doing effective tests is as simple as this:
+4. With everything in place, it is time for tests. We will deploy two different
+   versions of nginx, one with no CRITICAL issues (`nginx:latest`) and the other
+   with some of them (`nginx:1.18`):
 
    ```console
-   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-latest --image public.ecr.aws/nginx/nginx:latest
+   > kubectl -n myns create deployment nginx-latest --image public.ecr.aws/nginx/nginx:latest
    deployment.apps/nginx-latest created
 
-   course@ubuntu-jammy:~$ kubectl -n myns create deployment nginx-insecure --image public.ecr.aws/nginx/nginx:1.18
+   > kubectl -n myns create deployment nginx-insecure --image public.ecr.aws/nginx/nginx:1.18
    deployment.apps/nginx-insecure created
+   ```
 
-   course@ubuntu-jammy:~$ kubectl -n myns get all
+   The result will be this, with `nginx-insecure` not deployed:
+
+   ```console
+   > kubectl -n myns get all
    NAME                                READY   STATUS    RESTARTS   AGE
    pod/nginx-latest-8586ccc94b-9slg8   1/1     Running   0          103s
 
@@ -148,10 +160,13 @@
    deployment.apps/nginx-latest     1/1     1            1           103s
 
    NAME                                        DESIRED   CURRENT   READY   AGE
-   replicaset.apps/nginx-insecure-5785468788   1         0         0       94s
    replicaset.apps/nginx-latest-8586ccc94b     1         1         1       103s
+   ```
 
-   course@ubuntu-jammy:~$ kubectl -n myns get events --sort-by='.metadata.creationTimestamp' -A
+   Details about this behavior can be found inside Kubernetes events:
+
+   ```console
+   > kubectl -n myns get events --sort-by='.metadata.creationTimestamp' -A
    NAMESPACE      LAST SEEN   TYPE      REASON                    OBJECT                                          MESSAGE
    ...
    ...
@@ -164,6 +179,128 @@
    myns           21s         Normal    Pulled                    pod/nginx-latest-8586ccc94b-9slg8               Successfully pulled image "nginx:latest" in 1.291453932s (1.291487398s including waiting)
    myns           16s         Normal    ScalingReplicaSet         deployment/nginx-insecure                       Scaled up replica set nginx-insecure-5785468788 to 1
    myns           1s          Warning   FailedCreate              replicaset/nginx-insecure-5785468788            Error creating: admission webhook "trivy-admission-webhook.trivy-system.svc" denied the request: Not all containers secure, failing ...
+   ```
+
+   Not all the containers inside the `nginx-insecure` pod are secure!
+
+5. One last test remains: deploying an application coming from the internal
+   registry. It will be the one that was produced by the pipeline, so
+   `172.16.99.1:5000/ncat_http_msg_port:latest`.
+
+   We started Minikube with `--insecure-registry=172.16.99.1:5000`, so the self
+   signed certificate will be accepted for the deployment, but some work must be
+   made to make it also accepted by the webhook.
+
+   Let's first try to deploy the application into the `myns` namespace:
+
+   ```console
+   > kubectl -n myns create deployment ncat-http-msg-port --image 172.16.99.1:5000/ncat_http_msg_port:latest
+   deployment.apps/ncat-http-msg-port created
+   ```
+
+   Problem is that the status of the deployment is not `READY`:
+
+   ```console
+   > kubectl -n myns get deployments.apps
+   NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
+   ncat-http-msg-port   0/1     0            0           9s
+   ```
+
+   And so the pod isn't started. The reason is reported inside the webhook logs:
+
+   ```console
+   > kubectl -n trivy-system logs trivy-admission-webhook-7c888d7d86-h2tcb
+   ...
+   ...
+   Running command: trivy image -f json -s CRITICAL --exit-code 1 172.16.99.1:5000/ncat_http_msg_port:latest
+   10.244.0.1 - - [21/Sep/2023:13:30:20] "POST /validate?timeout=30s HTTP/1.1" 200 208 "" "kube-apiserver-admission"
+   2023-09-21T13:30:41.016Z        INFO    Vulnerability scanning is enabled
+   2023-09-21T13:30:41.016Z        INFO    Secret scanning is enabled
+   2023-09-21T13:30:41.016Z        INFO    If your scanning is slow, please try '--security-checks vuln' to disable secret scanning
+   2023-09-21T13:30:41.016Z        INFO    Please see also https://aquasecurity.github.io/trivy/v0.35/docs/secret/scanning/#recommendation for faster secret
+   detection
+   2023-09-21T13:30:41.037Z        FATAL   image scan error: scan error: unable to initialize a scanner: unable to initialize a docker scanner: 4 errors occurred:
+           * unable to inspect the image (172.16.99.1:5000/ncat_http_msg_port:latest): Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+           * unable to initialize Podman client: no podman socket found: stat podman/podman.sock: no such file or directory
+           * containerd socket not found: /run/containerd/containerd.sock
+           * Get "https://172.16.99.1:5000/v2/": x509: certificate signed by unknown authority; Get "http://172.16.99.1:5000/v2/": net/http: HTTP/1.x transport connection broken: malformed HTTP response "\x15\x03\x03\x00\x02\x02P"
+
+
+   Running command: trivy image -f json -s CRITICAL --exit-code 1 172.16.99.1:5000/ncat_http_msg_port:latest
+   10.244.0.1 - - [21/Sep/2023:13:30:41] "POST /validate?timeout=30s HTTP/1.1" 200 208 "" "kube-apiserver-admission"
+   ```
+
+   So the problem is that our `172.16.99.1:5000` is not recognized as secure,
+   because (we know) it is self signed.
+
+   We can delete the deployment for now, because we need to apply fixtures
+   elsewhere:
+
+   ```console
+   > kubectl -n myns delete deployment ncat-http-msg-port
+   deployment.apps "ncat-http-msg-port" deleted
+   ```
+
+   To fix this problem, we must tell the webhook to accept insecure registries,
+   by passing the `ALLOW_INSECURE_REGISTRIES` to the webhook container:
+
+   ```console
+   > kubectl -n trivy-system patch deployment trivy-admission-webhook --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/env", "value": [{"name": "ALLOW_INSECURE_REGISTRIES", "value": "True"}]}]'
+   deployment.apps/trivy-admission-webhook patched
+   ```
+
+   Then we will need to remove both the pod webhook and the webhook itself,
+   beacuse otherwise, while tryind to deploy the updated webhook pod, Kubernetes
+   will try to check for the webhook pod itself that doesn't exists!
+
+   ```console
+   > kubectl delete -f taw-validating-webhook-configuration.yaml
+   validatingwebhookconfiguration.admissionregistration.k8s.io "trivy-admission-webhook.trivy-system.svc" deleted
+
+   > kubectl -n trivy-system delete pod trivy-admission-webhook-7c888d7d86-h2tcb
+   pod "trivy-admission-webhook-7c888d7d86-h2tcb" deleted
+   ```
+
+   After some time, the new webhook pod should appear:
+
+   ```console
+   > kubectl -n trivy-system get pods
+   NAME                                       READY   STATUS    RESTARTS   AGE
+   trivy-admission-webhook-7c888d7d86-qsfv4   1/1     Running   0          29s
+   ```
+
+   And so the webhook can be created again:
+
+   ```console
+   > kubectl create -f taw-validating-webhook-configuration.yaml
+   validatingwebhookconfiguration.admissionregistration.k8s.io/trivy-admission-webhook.trivy-system.svc created
+   ```
+
+   Now, by deploying again our application, everything should be fine:
+
+   ```console
+   > kubectl -n myns create deployment ncat-http-msg-port --image 172.16.99.1:5000/ncat_http_msg_port:latest
+   deployment.apps/ncat-http-msg-port created
+
+   > kubectl -n myns get all -l app=ncat-http-msg-port
+   NAME                                      READY   STATUS    RESTARTS   AGE
+   pod/ncat-http-msg-port-5cc54dcc9f-6qgrr   1/1     Running   0          2m21s
+
+   NAME                                 READY   UP-TO-DATE   AVAILABLE   AGE
+   deployment.apps/ncat-http-msg-port   1/1     1            1           2m21s
+
+   NAME                                            DESIRED   CURRENT   READY   AGE
+   replicaset.apps/ncat-http-msg-port-5cc54dcc9f   1         1         1       2m21s
+   ```
+
+   From the webhook application perspective, the `trivy` command was correctly
+   invoked using the `--insecure` parameter:
+
+   ```console
+   > kubectl -n trivy-system logs trivy-admission-webhook-6bb7c75d98-x5rfg
+   ...
+   Running command: trivy image -f json -s CRITICAL --exit-code 1 --insecure 172.16.99.1:5000/ncat_http_msg_port:latest
+   10.244.0.1 - - [21/Sep/2023:13:44:28] "POST /validate?timeout=30s HTTP/1.1" 200 194 "" "kube-apiserver-admission"
    ```
 
 5. Bonus: doing the same in a multi node Kubernetes installation.
