@@ -1,6 +1,22 @@
-# Lab | Explore current SCC and add more permissions to a deployment | Solution
+# Lab | Explore current SCC and add more permissions to a deployment
 
----
+In this lab you will:
+
+1. As `kubeadmin`, look at available SCCs and explore some details (like
+   `anyuid`, `privileged` and `restricted`).
+2. As `developer` try deploying a new app inside a new project named `scc-test`
+   based on a container which require root privileges (like the `nginx:latest`
+   docker-image).
+3. Show logs and see why the pod can't run.
+4. Create a new ServiceAccount named `useroot`.
+5. As `kubeadmin` use the `add-scc-to-user` policy to add `anyuid` SCC to
+   `useroot` service account.
+6. Then, as `developer`, edit the `nginx` deployment to add `useroot` as
+   `serviceAccountName` attribute inside `spec:template:spec:` attribute;
+7. Check the new status of the deployment and look at logs to show if pods are
+   running correctly;
+
+## Solution
 
 1. First login as 'kubeadmin':
 
@@ -57,8 +73,6 @@
        Ranges:                        <none>
      Supplemental Groups Strategy: RunAsAny
        Ranges:                        <none>
-
-
    > oc describe scc/privileged
    ...
 
@@ -201,8 +215,6 @@
        deployment #3 running for 28 seconds - 1 pod
        deployment #2 deployed 4 minutes ago
        deployment #1 deployed 4 minutes ago
-
-
    1 info identified, use 'oc status --suggest' to see details.
    ```
 

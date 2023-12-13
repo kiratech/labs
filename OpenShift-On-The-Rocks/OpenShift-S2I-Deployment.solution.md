@@ -1,6 +1,18 @@
-# Lab | Deploy some applications from git and from Docker images | Solution
+# Lab | Deploy some applications from git and from Docker images
 
----
+In this lab you will:
+
+1. As `developer` create a new `testdeploy` project.
+2. Create a new app from the GitHub repository [https://github.com/mmul-it/docker/](https://github.com/mmul-it/docker/).
+   You must specify the `s2i-php-helloworld` directory as the context dir.
+3. Check the progress of the deployment.
+4. Expose and test the deployed application.
+5. Clean everything.
+6. Create a new app from the nginx official Docker image.
+7. Expose and test the deployed application.
+8. Clean everything.
+
+## Solution
 
 1. Login as `developer` on the cluster:
 
@@ -132,8 +144,6 @@
      deployment/nginx deploys istag/nginx:latest
        deployment #2 running for 34 seconds - 1 pod
        deployment #1 deployed 36 seconds ago
-
-
    1 info identified, use 'oc status --suggest' to see details.
    ```
 

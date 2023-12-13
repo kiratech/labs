@@ -1,6 +1,16 @@
-# Lab | Exposing your application | Solution
+# Lab | Exposing your application
 
----
+In this lab you will:
+
+1. As developer, deploy mariadb and tomcat applications into the project
+   `expose-test`.
+2. Verify if the DeploymentConfig, Pods and Service are up and running.
+3. Expose both applications.
+4. Verify that both applications are reachable. Is it true? Understand why just
+   'tomcat' can be reached and find out a way to expose mariadb.
+5. Cleanup everything.
+
+## Solution
 
 1. Login as `developer` and create the new `expose-test` project:
 
@@ -41,8 +51,6 @@
      deployment/tomcat deploys istag/tomcat:latest
        deployment #2 running for 3 minutes - 1 pod
        deployment #1 deployed 3 minutes ago
-
-
    2 infos identified, use `oc status --suggest` to see details.
 
    > oc get deployment
@@ -144,15 +152,4 @@
 
    Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
 
-   Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
-
-   MariaDB [testdb]>
-   ```
-
-5. By deleting the project with `oc delete project` everything will be wiped
-   as well:
-
-   ```console
-   > oc delete project expose-test
-   project.project.openshift.io "expose-test" deleted
-   ```
+   Type 'help;' or '\h' for help. Type '
