@@ -195,9 +195,9 @@ NAME      READY   STATUS    RESTARTS   AGE
 vault-0   1/1     Running   0          4m33s
 ```
 
-## Test
+## Test 1: inject secrets in a txt file
 
-Enable Kubernetes secrets management in Vault:
+Enable Kubernetes secrets engine in Vault:
 
 ```console
 $ kubectl -n vault exec -it vault-0 -- /bin/sh
@@ -296,6 +296,9 @@ spec:
   template:
     metadata:
       annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'internal-app'
+        vault.hashicorp.com/agent-inject-secret-database-config.txt: 'internal/data/database/config'
       labels:
         app: orgchart
     spec:
@@ -316,3 +319,142 @@ $ kubectl exec orgchart-7467ffbb9f-swq85 -- cat /vault/secrets/database-config.t
 data: map[password:mysupersecretpassword username:myuser]
 metadata: map[created_time:2024-04-19T15:25:58.893363499Z custom_metadata:<nil> deletion_time: destroyed:false version:1]
 ```
+
+## Test 2: use secrets as environment variables
+
+Create a new deployment (check [deployment-bash-env.yaml](deployment-bash-env.yaml)):
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: index-php
+  labels:
+    app: webserver
+data:
+  index.php: |
+    Application info:<br />
+    USERNAME: <b><?=getenv('USERNAME', true);?></b><br />
+    PASSWORD: <b><?=getenv('PASSWORD', true);?></b><br />
+    Node name: <b><?=getenv('NODE_NAME', true);?></b><br />
+    Node IP: <b><?=getenv('NODE_IP', true);?></b><br />
+    Pod namespace: <b><?=getenv('POD_NAMESPACE', true);?></b><br />
+    Pod name: <b><?=getenv('POD_NAME', true);?></b><br />
+    Pod IP: <b><?=getenv('POD_IP', true);?></b><br />
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver
+  labels:
+    app: webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webserver
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: 'internal-app'
+        vault.hashicorp.com/agent-inject-template-config: |
+          {{ with secret "internal/data/database/config" -}}
+          export USERNAME="{{ .Data.data.username }}"
+          export PASSWORD="{{ .Data.data.password }}"
+          {{- end }}
+      labels:
+        app: webserver
+    spec:
+      serviceAccountName: internal-app
+      containers:
+      - name: webserver
+        image: php:apache
+        env:
+        - name: BASH_ENV
+          value: /vault/secrets/config
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: docroot
+          mountPath: /var/www/html
+      volumes:
+      - name: docroot
+        configMap:
+          name: index-php
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webserver
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: webserver
+```
+
+Create it:
+
+```console
+$ kubectl apply -f deployment.yaml 
+configmap/index-php configured
+deployment.apps/webserver configured
+service/webserver configured
+```
+
+And test:
+
+```console
+$ kubectl port-forward webserver-7bdf868887-b94m8 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+```
+
+On another console:
+
+```console
+$ lynx -dump localhost:8080
+   Application info:
+   USERNAME: myuser
+   PASSWORD: mysupersecretpassword
+   Node name: hcp-vault-test-control-plane
+   Node IP: 172.18.0.2
+   Pod namespace: default
+   Pod name: webserver-7bdf868887-b94m8
+   Pod IP: 10.244.0.14
+
+$ kubectl exec webserver-7bdf868887-b94m8 -c webserver -it -- /bin/bash
+root@webserver-7bdf868887-b94m8:/var/www/html#
+
+root@webserver-7bdf868887-b94m8:/var/www/html# source /vault/secrets/config
+(no output)
+
+root@webserver-7bdf868887-b94m8:/var/www/html# env | egrep 'USERNAME|PASSWORD'
+USERNAME=myuser
+PASSWORD=mysupersecretpassword
+```
+
+## Other test
+
+App role
