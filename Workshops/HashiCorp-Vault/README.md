@@ -195,7 +195,7 @@ NAME      READY   STATUS    RESTARTS   AGE
 vault-0   1/1     Running   0          4m33s
 ```
 
-## Test 1: inject secrets in a txt file
+### Test 1: inject secrets in a txt file
 
 Enable Kubernetes secrets engine in Vault:
 
@@ -320,7 +320,7 @@ data: map[password:mysupersecretpassword username:myuser]
 metadata: map[created_time:2024-04-19T15:25:58.893363499Z custom_metadata:<nil> deletion_time: destroyed:false version:1]
 ```
 
-## Test 2: use secrets as environment variables
+### Test 2: use secrets as environment variables
 
 Create a new deployment (check [deployment-bash-env.yaml](deployment-bash-env.yaml)):
 
@@ -455,6 +455,226 @@ USERNAME=myuser
 PASSWORD=mysupersecretpassword
 ```
 
-## Other test
+## Using Vault Kubernetes Opertator
 
-App role
+The Vault Operator that will point to the local Vault instance by using a
+specific values file (check [vault-operator-values.yaml](vault-operator-values.yaml)):
+
+```console
+defaultVaultConnection:
+  enabled: true
+  address: "http://vault.vault.svc.cluster.local:8200"
+  skipTLSVerify: false
+```
+
+And will be installed using `helm`:
+
+```console
+$ helm install vault-secrets-operator hashicorp/vault-secrets-operator -n vault-secrets-operator-system --create-namespace --values vault-operator-values.yaml
+NAME: vault-secrets-operator
+LAST DEPLOYED: Tue Apr 30 16:23:55 2024
+NAMESPACE: vault-secrets-operator-system
+STATUS: deployed
+REVISION: 1
+
+$ kubectl -n vault-secrets-operator-system get all
+NAME                                                             READY   STATUS    RESTARTS   AGE
+pod/vault-secrets-operator-controller-manager-7c689d54b4-sfr5b   2/2     Running   0          6m6s
+
+NAME                                             TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
+service/vault-secrets-operator-metrics-service   ClusterIP   10.96.58.5   <none>        8443/TCP   6m6s
+
+NAME                                                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/vault-secrets-operator-controller-manager   1/1     1            1           6m6s
+
+NAME                                                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/vault-secrets-operator-controller-manager-7c689d54b4   1         1         1       6m6s
+```
+
+The first thing to be created will be the Custom Resource `VaultAuth` element:
+
+```console
+$ cat <<EOF | kubectl apply -f -
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: static-auth
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: internal-app
+    serviceAccount: internal-app
+    audiences:
+      - vault
+EOF
+vaultauth.secrets.hashicorp.com/static-auth created
+```
+
+This will activate the link between the `serviceAccount` and the Vault service.
+Then to create the effective secret a `VaultStaticSecret` Custom Resource
+containing all the Vault's secret specifics should be created as well:
+
+```console
+$ cat <<EOF | kubectl apply -f -
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: vault-kv-app
+spec:           
+  type: kv-v2
+  # mount path
+  mount: internal
+  # path of the secret
+  path: database/config
+  # dest k8s secret
+  destination:
+    name: secretkv
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: static-auth
+EOF                        
+vaultstaticsecret.secrets.hashicorp.com/vault-kv-app created
+```
+
+This will lead to the secret creation:
+
+```console
+$ kubectl get secret secretkv
+NAME       TYPE     DATA   AGE
+secretkv   Opaque   3      40s
+
+$ kubectl get secret secretkv -o yaml
+apiVersion: v1
+data:
+  _raw: eyJkYXRhIjp7InBhc3N3b3JkIjoibXlzdXBlcnNlY3JldHBhc3N3b3JkIiwidXNlcm5hbWUiOiJteXVzZXIifSwibWV0YWRhdGEiOnsiY3JlYXRlZF90aW1lIjoiMjAyNC0wNC0xOVQxNToyNTo1OC44OTMzNjM0OTlaIiwiY3VzdG9tX21ldGFkYXRhIjpudWxsLCJkZWxldGlvbl90aW1lIjoiIiwiZGVzdHJveWVkIjpmYWxzZSwidmVyc2lvbiI6MX19
+  password: bXlzdXBlcnNlY3JldHBhc3N3b3Jk
+  username: bXl1c2Vy
+kind: Secret
+metadata:
+  creationTimestamp: "2024-04-30T15:01:08Z"
+  labels:
+    app.kubernetes.io/component: secret-sync
+    app.kubernetes.io/managed-by: hashicorp-vso
+    app.kubernetes.io/name: vault-secrets-operator
+    secrets.hashicorp.com/vso-ownerRefUID: 62ead748-9085-4aae-bd2e-9830f3bf07b8
+  name: secretkv
+  namespace: default
+  ownerReferences:
+  - apiVersion: secrets.hashicorp.com/v1beta1
+    kind: VaultStaticSecret
+    name: vault-kv-app
+    uid: 62ead748-9085-4aae-bd2e-9830f3bf07b8
+  resourceVersion: "83311"
+  uid: 5ad098af-5682-4985-9766-323eb8818ae8
+type: Opaque
+```
+
+The secret will be usable by a deployment (check [deployment-secret.yaml](deployment-secret.yaml)):
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webserver-secret
+  labels:
+    app: webserver-secret
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webserver-secret
+  template:
+    metadata:
+      labels:
+        app: webserver-secret
+    spec:
+      serviceAccountName: internal-app
+      containers:
+      - name: webserver-secret
+        image: php:apache
+        envFrom:
+        - secretRef:
+            name: secretkv
+        env:
+        - name: USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: secretkv
+              key: username
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: secretkv
+              key: password
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: docroot
+          mountPath: /var/www/html
+      volumes:
+      - name: docroot
+        configMap:
+          name: index-php
+      - name: secretkv
+        secret:
+          secretName: secretkv
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webserver-secret
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: webserver-secret
+```
+
+That will be created:
+
+```console
+$ kubectl create -f deployment-secret.yaml 
+deployment.apps/webserver-secret created
+service/webserver-secret created
+
+$ kubectl port-forward webserver-secret-857666696c-p2g7b 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+```
+
+And tested:
+
+```console
+$  lynx -dump localhost:8080
+   Application info:
+   USERNAME: myuser
+   PASSWORD: mysupersecretpassword
+   Node name: hcp-vault-test-control-plane
+   Node IP: 172.18.0.2
+   Pod namespace: default
+   Pod name: webserver-secret-857666696c-p2g7b
+   Pod IP: 10.244.0.11
+```
