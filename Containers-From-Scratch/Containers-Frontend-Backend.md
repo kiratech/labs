@@ -51,7 +51,7 @@ In this lab you will:
    (no output)
    ```
 
-   Run the `mariadb:latest` container:
+   Run the `backend` container using the `mariadb:latest` image:
 
    ```console
    $ docker run --rm --name backend --network=test -v $PWD/backend:/var/lib/mysql \
@@ -61,11 +61,11 @@ In this lab you will:
    c0c63d3d6ba0df18a0f876cb3796c9a718b7781b614e94e7c4c49809649540c7
    ```
 
-3. Execute a shell on the `mariadb` container to create the `frontend` database
+3. Execute a shell on the `backend` container to create the `frontend` database
    and set privileges:
 
    ```console
-   $ docker exec -it backend mysql -uroot -p
+   $ docker exec -it backend mariadb -uroot -p
    Enter password:
    Welcome to the MariaDB monitor.  Commands end with ; or \g.
    ...

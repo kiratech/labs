@@ -7,7 +7,7 @@ In this lab you will:
    - User: `dockertraining`
    - Pass: `l3tstr41n`\
    Use `curl` to extract the list of the available images.
-2. Do the same using [the python script registry.py](https://github.com/andrey-pohilko/registry-cli/).
+2. Do the same using [the anoxis/registry-cli container](https://github.com/andrey-pohilko/registry-cli/).
 
 ## Solution
 

@@ -3,22 +3,17 @@
 In this lab you will:
 
 1. Download and uncompress the tar image named
-   [Containers-Import-Image-From-tar.nginx-saved-container.tar.xz](https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz).
+   [Containers-Import-Image-From-tar.nginx-saved-container.tar.xz](https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz).
 2. *Load* the saved image into the local docker image archive.
 3. Run a container starting from this image and exposing port `8080`. Note what is different from a usual nginx.
-4. Download and uncompress now the tar named
-   [Containers-Import-Image-From-tar.nginx-exported-container.tar.xz](https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz).
-5. *Load* the image, what happens?
-6. Now try to *import* the image, what happens?
-7. Finally try to run a container based on this image, is this possible? Can you tell why?
 
 ## Solution
 
-1. The file [Containers-Import-Image-From-tar.nginx-saved-container.tar.xz](https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz)
+1. The file [Containers-Import-Image-From-tar.nginx-saved-container.tar.xz](https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz)
    should be downloaded and uncompressed:
 
    ```console
-   $ curl -sL https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz -o Containers-Import-Image-From-tar.nginx-saved-container.tar.xz
+   $ curl -sL https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-saved-container.tar.xz -o Containers-Import-Image-From-tar.nginx-saved-container.tar.xz
    ...
 
    $ xz -d Containers-Import-Image-From-tar.nginx-saved-container.tar.xz
@@ -45,25 +40,37 @@ In this lab you will:
    This container image was saved from a running nginx container
    ```
 
-4. The file [Containers-Import-Image-From-tar.nginx-exported-container.tar.xz](https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz)
+---
+
+## Bonus section
+
+1. Download and uncompress now the tar named [Containers-Import-Image-From-tar.nginx-exported-container.tar.xz](https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz).
+2. *Load* the image, what happens?
+3. Now try to *import* the image, what happens?
+4. Finally try to run a container based on this image, is this possible? Can you tell why?
+5. Stop the container.
+
+### Solution to the bonus section
+
+1. The file [Containers-Import-Image-From-tar.nginx-exported-container.tar.xz](https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz)
    should be downloaded and uncompressed:
 
    ```console
-   $ curl -sL https://github.com/mmul-it/training/raw/master/Kubernetes-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz -o Containers-Import-Image-From-tar.nginx-exported-container.tar.xz
+   $ curl -sL https://github.com/mmul-it/training/raw/master/Containers-From-Scratch/Containers-Import-Image-From-tar.nginx-exported-container.tar.xz -o Containers-Import-Image-From-tar.nginx-exported-container.tar.xz
    ...
 
    $ xz -d Containers-Import-Image-From-tar.nginx-exported-container.tar.xz
    (no output)
    ```
 
-5. The `docker load` command should end up in an error:
+2. The `docker load` command should end up in an error:
 
    ```console
    $ docker load -i Containers-Import-Image-From-tar.nginx-exported-container.tar
    open /var/lib/docker/tmp/docker-import-876757938/bin/json: no such file or directory
    ```
 
-6. On the other side `docker import` should work as expected:
+3. On the other side `docker import` should work as expected:
 
    ```console
    $ docker import Containers-Import-Image-From-tar.nginx-exported-container.tar
@@ -79,7 +86,7 @@ In this lab you will:
    (no output)
    ```
 
-7. But the problem is now `docker run`, that will not work:
+4. But the problem is now `docker run`, that will not work:
 
    ```console
    $ docker run --detach --name nginx-exported-container --rm --publish 8080:80 nginx-exported-container
@@ -90,3 +97,10 @@ In this lab you will:
    The export that was originally made on this image does not contain any metadata
    useful to docker to run the base container, because of this `docker run`
    fails.
+
+5. Stop the container:
+
+   ```console
+   $ docker stop nginx-saved-container
+   nginx-saved-container
+   ```

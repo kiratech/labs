@@ -2,19 +2,18 @@
 
 In this lab you will:
 
-1. Pull and run the "mysql" container image with the name "network-test", exposing the 3306 port to the 3306 on the host.
+1. Pull and run the `mysql` container image with the name `network-test`, exposing the 3306 port to the 3306 on the host.
 2. Obtain the PID of the container process on the host.
 3. Use the `nsenter` command (to execute a command in another namespace) on this PID so that you can launch a `tcpdump` (to be installed) on the container's network interface.
 4. From another console, connect to the exposed port and generate some traffic, monitoring what happens on the `tcpdump`.
+5. Stop the `network-test` container.
 
 ## Solution
 
 1. Use `docker run` to start MySQL container, passing the `MYSQL_ROOT_PASSWORD` environment variable:
 
    ```console
-   $ minikube ssh
-
-   docker@minikube:~$ docker run --rm --detach --name network-test -p 3306:3306 -e MYSQL_ROOT_PASSWORD=testr00t mysql
+   $ docker run --rm --detach --name network-test -p 3306:3306 -e MYSQL_ROOT_PASSWORD=testr00t mysql
    Unable to find image 'mysql:latest' locally
    latest: Pulling from library/mysql
    996f1bba14d6: Pull complete
@@ -36,36 +35,48 @@ In this lab you will:
 2. There are two methods to find out the PID, one is via the `ps` command:
 
    ```console
-   docker@minikube:~$ ps -ef | grep [m]ysql
+   $ ps -ef | grep [m]ysql
    999       **290813**  290792  1 15:42 ?        00:00:01 mysqld
    ```
 
    The other one is via `docker inspect`:
 
    ``` console
-   docker@minikube:~$ docker inspect --format {{.State.Pid}} network-test
+   $ docker inspect --format {{.State.Pid}} network-test
    **290813**
    ```
 
-3. Install `tcpdump` and execute `nsenter`:
+3. Install `tcpdump`, using for Debian based systems:
 
    ```console
-   docker@minikube:~$ sudo apt-get update
+   $ sudo apt-get update
    ...
 
-   docker@minikube:~$ sudo apt-get install -y tcpdump
+   $ sudo apt-get install -y tcpdump
+   ...
+   ```
+
+   And for RHEL based systems:
+
+   ```console
+   $ sudo yum update
    ...
 
-   docker@minikube:~$ sudo nsenter -t 290813 -n tcpdump -i eth0 -vvv
+   $ sudo yum -y install tcpdump
+   ...
+   ```
+
+   And execute `nsenter`:
+
+   ```console
+   $ sudo nsenter -t 290813 -n tcpdump -i eth0 -vvv
    tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
    ```
 
 4. From another console use `nc` to reach the 3306 port:
 
    ```console
-   $ minikube ssh
-
-   docker@minikube:~$ nc -v localhost 3306
+   $ nc -v localhost 3306
    Connection to localhost 3306 port [tcp/mysql] succeeded!
    J
    8.0.31
@@ -85,6 +96,13 @@ In this lab you will:
    ...
    ```
 
+5. Stop the `network-test` container:
+
+   ```console
+   $ docker stop network-test
+   network-test
+   ```
+
 ---
 
 ## Alternative method to get access to the network namespace
@@ -92,9 +110,11 @@ In this lab you will:
 Create the namespace directory `/var/run/netns` and link the system namespace associated with the process (`/proc/<PID>/ns/net`) with the container ID (`/var/run/netns/<containerID>`):
 
 ```console
-docker@minikube:~$ sudo mkdir /var/run/netns
+$ sudo mkdir /var/run/netns
+(no output)
 
-docker@minikube:~$ sudo ln -s /proc/290813/ns/net /var/run/netns/network-test
+$ sudo ln -s /proc/290813/ns/net /var/run/netns/network-test
+(no output)
 ```
 
 The namespace should become visible via `ip netns show`, and in addition it should be possible to exec commands within it.
@@ -102,5 +122,6 @@ The namespace should become visible via `ip netns show`, and in addition it shou
 Execute `tcpdump` on this namespace so that you will be able to see all the traffic passing by `eth0`:
 
 ```console
-docker@minikube:~$ sudo ip netns exec network-test tcpdump -i eth0 -vvv
+$ sudo ip netns exec network-test tcpdump -i eth0 -vvv
+...
 ```
