@@ -1,6 +1,6 @@
 # InstructLab Workshop
 
-InstructLab make the `ilab` tool able to apply a novel synthetic data-based
+InstructLab makes the `ilab` tool able to apply a novel synthetic data-based
 alignment tuning method for **Large Language Models** (**LLMs**).
 
 The `ilab` tool makes it possible to cover the entire life-cycle of an LLM model
@@ -10,29 +10,45 @@ train the model to get a new and improved one.
 ## Install InstructLab
 
 InstructLab is a Python based tool, so the best way to run everything is to
-create a Python virtual environment and install everything in there:
+create a Python virtual environment and install everything in there.
+
+Official documentation is tested over Fedora, so using this operating system is
+suggested:
 
 ```console
-$ python3 -m venv venv
+$ cat /etc/fedora-release
+Fedora release 40 (Forty)
+
+$ sudo dnf -y install gcc gcc-c++ make git python3.11 python3.11-devel
+...
+
+$ mkdir -v instructlab && cd instructlab
+mkdir: created directory 'instructlab'
+
+$ python3 -m venv --upgrade-deps venv
 (no output)
 
 $ source venv/bin/activate
+(venv) $
+
+(venv) $ pip cache remove llama_cpp_python
+WARNING: No matching packages for pattern "llama_cpp_python"
+Files removed: 0
+
+(venv) $ pip install instructlab[cpu] \
+   --extra-index-url=https://download.pytorch.org/whl/cpu \
+   -C cmake.args="-DLLAMA_NATIVE=off"
+...
+...
+
+(venv) $ eval "$(_ILAB_COMPLETE=bash_source ilab)"
 (no output)
 
-(venv) $ git clone https://github.com/instructlab/instructlab
-Cloning into 'instructlab'...
-remote: Enumerating objects: 5187, done.
-remote: Counting objects: 100% (834/834), done.
-remote: Compressing objects: 100% (169/169), done.
-remote: Total 5187 (delta 734), reused 679 (delta 658), pack-reused 4353
-Receiving objects: 100% (5187/5187), 6.37 MiB | 27.17 MiB/s, done.
-Resolving deltas: 100% (3285/3285), done.
+(venv) $ _ILAB_COMPLETE=bash_source ilab > ~/.ilab-complete.bash
+(no output)
 
-(venv) $ pip3 install ./instructlab/
-Processing ./instructlab
-  Installing build dependencies ... done
-...
-...
+(venv) $ echo ". ~/.ilab-complete.bash" >> ~/.bashrc
+(no output)
 ```
 
 Using a CUDA enabled environment is not mandatory, but will affect the timings,
@@ -72,7 +88,7 @@ With this everything should be in place, and the environment can be initialized.
 With `ilab init` the environment is initialized:
 
 ```
-(venv) $ ilab init --non-interactive
+(venv) $ ilab config init --non-interactive
 Cloning https://github.com/instructlab/taxonomy.git...
 Generating `config.yaml` in the current directory...
 Initialization completed successfully, you're ready to start using `ilab`. Enjoy!
@@ -80,8 +96,9 @@ Initialization completed successfully, you're ready to start using `ilab`. Enjoy
 
 This will download the taxonomy repository and create a `config.yaml` file.
 
-There's a last fix to add on Ubuntu systems, to make `taxonomy/schema` folder
-available in the Python virtual environment:
+**NOTE for Ubuntu users (using Ubuntu IS NOT RECCOMENDED)**: there's a last fix to
+add on Ubuntu systems, to make `taxonomy/schema` folder available in the Python
+virtual environment:
 
 ```console
 (venv) $ ln -svf $PWD/taxonomy/schema venv/lib/python3.10/site-packages/instructlab/
@@ -97,7 +114,7 @@ The `ilab` tool will work on an existing LLM, that by default is
 an open-source model by IBM:
 
 ```console
-(venv) $ ilab download 
+(venv) $ ilab model download
 Downloading model from instructlab/merlinite-7b-lab-GGUF@main to models...
 Downloading 'merlinite-7b-lab-Q4_K_M.gguf' to 'models/.huggingface/download/merlinite-7b-lab-Q4_K_M.gguf.9ca044d727db34750e1aeb04e3b18c3cf4a8c064a9ac96cf00448c506631d16c.incomplete'
 INFO 2024-05-22 14:52:51,038 file_download.py:1877 Downloading 'merlinite-7b-lab-Q4_K_M.gguf' to 'models/.huggingface/download/merlinite-7b-lab-Q4_K_M.gguf.9ca044d727db34750e1aeb04e3b18c3cf4a8c064a9ac96cf00448c506631d16c.incomplete'
@@ -111,10 +128,10 @@ INFO 2024-05-22 14:53:30,197 file_download.py:1893 Download complete. Moving fil
 The model, as is, can be served and tested as follows, from the same terminal:
 
 ```console
-(venv) $ ilab serve
-INFO 2024-05-22 14:53:39,283 lab.py:319 Using model 'models/merlinite-7b-lab-Q4_K_M.gguf' with -1 gpu-layers and 4096 max context size.
-INFO 2024-05-22 14:53:39,753 server.py:206 Starting server process, press CTRL+C to shutdown server...
-INFO 2024-05-22 14:53:39,753 server.py:207 After application startup complete see http://127.0.0.1:8000/docs for API.
+(venv) $ ilab model serve
+INFO 2024-08-05 10:28:20,173 serve.py:51: serve Using model 'models/merlinite-7b-lab-Q4_K_M.gguf' with -1 gpu-layers and 4096 max context size.
+INFO 2024-08-05 10:28:20,989 server.py:218: server Starting server process, press CTRL+C to shutdown server...
+INFO 2024-08-05 10:28:20,989 server.py:219: server After application startup complete see http://127.0.0.1:8000/docs for API.
 ```
 
 And then from another one:
@@ -123,19 +140,22 @@ And then from another one:
 $ source venv/bin/activate
 (no output)
 
-(venv) $ ilab chat
+(venv) $ ilab model chat
+╭───────────────────────────────────────────────────────────────────────────────── system ──────────────────────────────────────────────────────────────────────────────────╮
+│ Welcome to InstructLab Chat w/ MODELS/MERLINITE-7B-LAB-Q4_K_M.GGUF (type /h for help)                                                                                     │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 >>> When the www.miamammausalinux.org blog was founded?                                                                                       [S][default]
-╭───────────────────────────────────────────────────────── models/merlinite-7b-lab-Q4_K_M.gguf ──────────────────────────────────────────────────────────╮
-│ The blog miamammausalinux.org was established in 2007, focusing on Linux                                                                               │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── elapsed 6.125 seconds ─╯
+╭─────────────────────────────────────────────────────────────────── models/merlinite-7b-lab-Q4_K_M.gguf ───────────────────────────────────────────────────────────────────╮
+│ The www.miamammausalinux.org blog was established on 2015-01-16. This means that the author has been actively sharing content for over 7 years now!                       │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── elapsed 17.533 seconds ─╯
 >>> Who founded the www.miamammausalinux.org blog?                                                                                            [S][default]
-╭───────────────────────────────────────────────────────── models/merlinite-7b-lab-Q4_K_M.gguf ──────────────────────────────────────────────────────────╮
-│ Miami Mama, the founder of the blog, is a tech-savvy individual with extensive knowledge and experience in various areas of technology. Her primary    │
-│ focus is on Linux, making her an expert in this field.                                                                                                 │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── elapsed 11.938 seconds ─╯
+╭─────────────────────────────────────────────────────────────────── models/merlinite-7b-lab-Q4_K_M.gguf ───────────────────────────────────────────────────────────────────╮
+│ The founders of the www.miamammausalinux.org blog are Michael and Maria, a couple with a passion for all things Linux. They started their blog as a way to share their    │
+│ knowledge and love for open-source software with others who might be interested in learning more about it too!                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── elapsed 25.446 seconds ─╯
 ```
 
-_TIP: the answers, especially the second one, is not correct at all_
+**NOTE**: the answers are not correct at all!
 
 ## Adding knowledge to the model
 
@@ -205,7 +225,7 @@ Note that the references at the end are real, [check the specific commit](https:
 To check that the additions are considered by `ilab`, just check with:
 
 ```console
-(venv) $ ilab diff
+(venv) $ ilab taxonomy diff
 knowledge/tech_industry/mmul/qna.yaml
 Taxonomy in /taxonomy/ is valid :)
 ```
@@ -217,28 +237,26 @@ synthetic data that will enhance our example data, and make them suitable for
 the model training:
 
 ```console
-(venv) $ ilab generate
-ggml_cuda_host_malloc: warning: failed to allocate 512.00 MiB of pinned memory: forward compatibility was attempted on non supported HW
-ggml_cuda_host_malloc: warning: failed to allocate 0.14 MiB of pinned memory: forward compatibility was attempted on non supported HW
-ggml_cuda_host_malloc: warning: failed to allocate 296.01 MiB of pinned memory: forward compatibility was attempted on non supported HW
-Generating synthetic data using 'models/merlinite-7b-lab-Q4_K_M.gguf' model, taxonomy:'taxonomy' against http://127.0.0.1:10684/v1 server
-  0%|                                                                                                                             | 0/100 [00:00<?, ?it/s]Synthesizing new instructions. If you aren't satisfied with the generated instructions, interrupt training (Ctrl-C) and try adjusting your YAML files. Adding more examples may help.
+(venv) $ ilab data generate
+llama_cpp_python is built without hardware acceleration. ilab generate will be very slow.
+Generating synthetic data using 'models/merlinite-7b-lab-Q4_K_M.gguf' model, taxonomy:'taxonomy' against http://127.0.0.1:47107/v1 server
+Cannot find prompt.txt. Using default prompt depending on model-family.
+  0%|                                                                                                                                                | 0/100 [00:00<?, ?it/s]Synthesizing new instructions. If you aren't satisfied with the generated instructions, interrupt training (Ctrl-C) and try adjusting your YAML files. Adding more examples may help.
+INFO 2024-08-05 10:34:02,141 generate_data.py:505: generate_data Selected taxonomy path knowledge->tech_industry->mmul
 ...
 ...
-100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 100/100 [2:54:27<00:00, 104.68s/it]
-INFO 2024-06-11 20:35:42,182 generate_data.py:607: generate_data 100 instructions generated, 49 discarded due to format (see generated/discarded_merlinite-7b-lab-Q4_K_M_2024-06-11T17_41_14.log), 16 discarded due to rouge score
-INFO 2024-06-11 20:35:42,182 generate_data.py:611: generate_data Generation took 10468.42s
+INFO 2024-08-05 23:30:45,476 generate_data.py:613: generate_data Generation took 20998.12s
 ```
 
-This will take long to complete (up to 3 hours) and will generate four files
+This will take long to complete (up to 6 hours) and will generate four files
 under the `generated` folder:
 
 ```console
 (venv) $ ls -1rt generated/
-discarded_merlinite-7b-lab-Q4_K_M_2024-06-11T17_41_14.log
-train_merlinite-7b-lab-Q4_K_M_2024-06-11T17_41_14.jsonl
-test_merlinite-7b-lab-Q4_K_M_2024-06-11T17_41_14.jsonl
-generated_merlinite-7b-lab-Q4_K_M_2024-06-11T17_41_14.json
+discarded_merlinite-7b-lab-Q4_K_M_2024-08-05T17_40_48.log
+generated_merlinite-7b-lab-Q4_K_M_2024-08-05T17_40_48.json
+train_merlinite-7b-lab-Q4_K_M_2024-08-05T17_40_48.jsonl
+test_merlinite-7b-lab-Q4_K_M_2024-08-05T17_40_48.jsonl
 ```
 
 The ones that will have a crucial role on the training part are `train_` and
@@ -246,10 +264,14 @@ The ones that will have a crucial role on the training part are `train_` and
 
 ## Train the model
 
-Training the model with `ilab` should be a matter of `ilab train`, but the
-problem is that on a standard laptop this can take 7 days.
+Training the model with `ilab` should be a matter of `ilab train`. This command
+produces a new `gguf` file into the path `training_results/final/ggml-model-f16.gguf`
+that can be used to re-initiate the process, by adding further _knowledge_ and
+_skills_ to the models.
 
-NVIDIA T4 GPUs are available in Google Colab, for free and limited usage.
+The problem is that on a standard laptop this can take 7 days, so a GPU is
+mandatory. **NVIDIA T4 GPUs** are available in *Google Colab*, for free and
+limited usage.
 
 Google Colab works by using _notebooks_, which are basically sequences of Python
 commands. Detailed instructions about how to do all the operations are
@@ -263,15 +285,32 @@ A summary of what needs to be done is:
    notebook.
 3. Change the paths of `training_file_name` and `testing_file_name` inside the
    related boxes so that they point to the loaded files:
-
    ![LoRA variables](InstructLab-LoRA-variables.png)
-4. Download the LoRA `ggml-adapter-model.bin` file generated by the run that
+4. Download the LoRA `adapter_model.safetensors` file generated by the run that
    was created inside the `/content/adapter-only` colab folder:
    ![adapter-only](InstructLab-LoRA-generated-files.png)
-
    Into the local `models` folder, so that it will be used by `llama.cpp/export-lora`.
 
-## Use the model locally
+## What is a LoRA adapter
+
+A **LoRA** (_Low-Rank Adaptation_) adapter is a technique used to efficiently
+fine-tune large-scale pre-trained language models. This method aims to reduce
+the computational and storage costs associated with adapting large models to
+specific tasks, making it particularly useful for resource-constrained
+environments.
+
+**LoRA** adapters are useful because of:
+
+- **Specialized Fine-Tuning**: LoRA models are fine-tuned using low-rank
+  adaptation, which involves updating only a small number of parameters to
+  adapt a pre-trained model to a specific task.
+- **Parameter Efficiency**: This method is efficient in terms of memory and
+  computational resources, making it suitable for situations where resource
+  constraints are a concern.
+- **Task-Specific Adaptation**: The resulting model is highly adapted to the
+  specific task it was fine-tuned for, leveraging the low-rank updates.
+
+## Use the LoRA adapter locally
 
 Passing from LoRA to a standard GGUF model, as suggestend in the usual
 InstructLab workflow, [might not be the best choice](https://github.com/ggerganov/llama.cpp/issues/3953),
@@ -279,7 +318,7 @@ but it is actually possible by locally compiling [llama.cpp](https://github.com/
 as follows:
 
 ```console
-(venv) $ git clone https://github.com/ggerganov/llama.cpp
+(venv) $ git clone https://github.com/ggerganov/llama.cpp && cd llama.cpp
 Cloning into 'llama.cpp'...
 remote: Enumerating objects: 26748, done.
 remote: Counting objects: 100% (81/81), done.
@@ -288,23 +327,10 @@ remote: Total 26748 (delta 31), reused 51 (delta 19), pack-reused 26667
 Receiving objects: 100% (26748/26748), 47.84 MiB | 16.09 MiB/s, done.
 Resolving deltas: 100% (19030/19030), done.
 
-(venv) $ cd llama.cpp
+(venv) $ make
+...
 
-(venv) $ CUDACXX="$(which nvcc)" \
-         CMAKE_ARGS="-DLLAMA_CUBLAS=on -DCMAKE_CUDA_ARCHITECTURES=all-major" \
-         FORCE_CMAKE=1 \
-         cmake -B build -DLLAMA_CUDA=ON
--- The C compiler identification is GNU 11.4.0
-...
-...
--- Build files have been written to: /home/rasca/Labs/ilab/llama.cpp/build
 
-(venv) $ CUDACXX="$(which nvcc)" \         
-         CMAKE_ARGS="-DLLAMA_CUBLAS=on -DCMAKE_CUDA_ARCHITECTURES=all-major" \ 
-         FORCE_CMAKE=1 \
-         cmake --build build --config Release
-[  0%] Building C object CMakeFiles/ggml.dir/ggml.c.o
-...
 ```
 
 And using the `export-lora` executable in this way:
