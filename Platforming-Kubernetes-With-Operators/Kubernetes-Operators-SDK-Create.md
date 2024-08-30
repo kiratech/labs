@@ -9,11 +9,10 @@ Initialize the operator's main directory by using the `operator-sdk init`
 command. The domain of our operator will be `kiratech.it`:
 
 ```bash
-[kirater@training-kfs-minikube ~]$ mkdir kiraop
+$ mkdir -v kiraop && cd kiraop/
+mkdir: created directory 'kiraop'
 
-[kirater@training-kfs-minikube ~]$ cd kiraop/
-
-[kirater@training-kfs-minikube kiraop]$ operator-sdk init --domain kiratech.it --plugins ansible
+$ operator-sdk init --domain kiratech.it --plugins ansible
 Writing kustomize manifests for you to edit...
 Next: define a resource with:
 $ operator-sdk create api
@@ -23,8 +22,19 @@ The initialization will produce some content inside the directory that will
 serve as the operator's working directory:
 
 ```bash
-[kirater@training-kfs-minikube kiraop]$ ls
-config  Dockerfile  Makefile  molecule  playbooks  PROJECT  requirements.yml  roles  watches.yaml
+kiraop/
+├── Dockerfile
+├── LICENSE
+├── Makefile
+├── PROJECT
+├── config           (d)
+├── molecule         (d)
+├── playbooks        (d)
+├── requirements.yml
+├── roles            (d)
+└── watches.yaml
+
+4 directories, 6 files
 ```
 
 The operator will rely on a custom Ansible role that will be part of the group
@@ -33,13 +43,30 @@ name, in this case `Akit`, and initialized by the `operator-sdk create api`
 command:
 
 ```bash
-[kirater@training-kfs-minikube kiraop]$ ls roles
+$ ls roles
+(no output)
 
-[kirater@training-kfs-minikube kiraop]$ operator-sdk create api --version v1alpha1 --kind Akit --generate-role
+$ operator-sdk create api --version v1alpha1 --kind Akit --generate-role
 Writing kustomize manifests for you to edit...
 
-[kirater@training-kfs-minikube kiraop]$ ls roles/
-akit
+$ tree roles/
+roles/
+└── akit
+    ├── README.md
+    ├── defaults
+    │   └── main.yml
+    ├── files
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── tasks
+    │   └── main.yml
+    ├── templates
+    └── vars
+        └── main.yml
+
+8 directories, 6 files
 ```
 
 What will effectively be done by the operator will be defined inside the file
@@ -139,18 +166,15 @@ akit_expose_lb: true
 
 To define the permissions needed by the operator the `config/rbac/role.yaml`
 must be edited. In the proposed example the operator should have powers to
-create a lot of resources, so a specific `ClusterRole` will be defined:
+create a lot of resources, so the first rule of the list should be edited to
+contain extended `resources`:
 
 ```yaml
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: manager-role
 rules:
-  ##
-  ## Base operator rules
-  ##
   - apiGroups:
       - ""
     resources:
@@ -159,31 +183,21 @@ rules:
       - deployments
       - services
       - secrets
+      - configmaps
       - pods
       - pods/exec
       - pods/log
+...
+...
 ```
 
 ## Operator's container image build
 
-With everything in place it is time to build the operator container. Since the
-container will be pushed somewhere in a public registry, a specific name needs
-to be set. This can be made by setting the `IMAGE_TAG_BASE` variable in the
-`Makefile`:
+Since we will push a generated container image inside a remote repository, we
+will need to authenticate on it. This can be achieved by using `docker login`:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ grep ^IMAGE_TAG_BASE Makefile
-IMAGE_TAG_BASE ?= quay.io/mmul/kiraop
-
-[kirater@training-kfs-minikube kiraop]$ grep ^IMG Makefile
-IMG ?= $(IMAGE_TAG_BASE):$(VERSION)
-```
-
-It is mandatory to have login powers to the destination registry, and this can
-be achieved by using `docker login`:
-
-```console
-[kirater@training-kfs-minikube kiraop]$ docker login quay.io -u 'mmul+kiraop'
+$ docker login quay.io -u 'mmul+kiraop'
 Password:
 WARNING! Your password will be stored unencrypted in /home/kirater/.docker/config.json.
 Configure a credential helper to remove this warning. See
@@ -192,48 +206,36 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 Login Succeeded
 ```
 
+With everything in place it is time to build the operator container. Since the
+container will be pushed somewhere in a public registry, a specific name needs
+to be set.
+
+The best approach is to pass the correct `IMG` value so that it will be
+processed by the `Makefile`:
 Not it is time to effectively build and push the operator container image:
 
 ```console
-
-$ make docker-build docker-push IMG=quay.io/mmul/kiraop:v0.0.1
-
-[kirater@training-kfs-minikube kiraop]$ make docker-build docker-push
-docker build -t quay.io/mmul/kiraop:0.0.1 .
+$ IMG=quay.io/mmul/kiraop:v0.0.1 make docker-build docker-push
+docker build -t quay.io/mmul/kiraop:v0.0.1 .
 [+] Building 0.8s (11/11) FINISHED                                                        docker:default
  => [internal] load build definition from Dockerfile
 ...
 ...
-docker push quay.io/mmul/kiraop:0.0.1
+docker push quay.io/mmul/kiraop:v0.0.1
 The push refers to repository [quay.io/mmul/kiraop]
-40112080b803: Pushed
-3ef22fa65bd4: Pushed
-ad3524b33cdd: Pushed
-8a4ecb6fa7a9: Pushed
-e643d0a73d6f: Pushed
-d558eb29f828: Mounted from operator-framework/ansible-operator
-5f70bf18a086: Mounted from operator-framework/ansible-operator
-b2280ff3b4f1: Mounted from operator-framework/ansible-operator
-35f39bef42b5: Mounted from operator-framework/ansible-operator
-e52bf27270ec: Mounted from operator-framework/ansible-operator
-816eef7f4aac: Mounted from operator-framework/ansible-operator
-18e82a61fc56: Mounted from operator-framework/ansible-operator
-fe69b5b7445f: Mounted from operator-framework/ansible-operator
-00e0d697268b: Mounted from operator-framework/ansible-operator
-815ca85c5fa5: Mounted from operator-framework/ansible-operator
-0.0.1: digest: sha256:5faf62fc61e1d27289184aadc4413b4cbaa0482dcf0a2506d8ae5d90a64c43c3 size: 3452
+v0.0.1: digest: sha256:46771d9b5bc5c92e6cbaa8d6d36c907c25566db8ab45c8c98742a0472d61dde8 size: 3452
 ```
 
-Since the image is available the operator can be installed by using
+Now that the image is available, the operator can be installed by using
 `make deploy`. This will try to install everything inside the default Kubernetes
 cluster accessible via `kubectl`:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ make deploy
-cd config/manager && /home/kirater/kiraop/bin/kustomize edit set image controller=controller:latest
+$ IMG=quay.io/mmul/kiraop:v0.0.1 make deploy
+cd config/manager && /home/kirater/kiraop/bin/kustomize edit set image controller=quay.io/mmul/kiraop:v0.0.1
 /home/kirater/kiraop/bin/kustomize build config/default | kubectl apply -f -
 namespace/kiraop-system created
-customresourcedefinition.apiextensions.k8s.io/akits.cache.kiratech.it unchanged
+customresourcedefinition.apiextensions.k8s.io/akits.kiratech.it created
 serviceaccount/kiraop-controller-manager created
 role.rbac.authorization.k8s.io/kiraop-leader-election-role created
 clusterrole.rbac.authorization.k8s.io/kiraop-manager-role created
@@ -250,7 +252,7 @@ Monitoring the status of the resources inside the `kiraop-system` namespace will
 tell when the operator is ready:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ kubectl -n kiraop-system get all
+$ kubectl -n kiraop-system get all
 NAME                                             READY   STATUS    RESTARTS   AGE
 pod/kiraop-controller-manager-7c7cd5dd7f-h8fkn   2/2     Running   0          26s
 
@@ -268,7 +270,7 @@ And the relative CRD available:
 
 ```console
 [kirater@training-kfs-minikube kiraop]$ kubectl get crd | grep akit
-akits.cache.kiratech.it                               2023-11-02T17:19:06Z
+akits.kiratech.it                                      2024-08-28T15:13:54Z
 ```
 
 ## Operator's tests
@@ -276,8 +278,8 @@ akits.cache.kiratech.it                               2023-11-02T17:19:06Z
 Testing the operator is possible by creating its CRD:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ cat << EOF | kubectl apply -f -
-apiVersion: cache.kiratech.it/v1alpha1
+$ cat << EOF | kubectl apply -f -
+apiVersion: kiratech.it/v1alpha1
 kind: Akit
 metadata:
   name: akit-sample
@@ -291,29 +293,29 @@ akit.cache.kiratech.it/akit-sample created
 And monitor everything:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ kubectl get akit
+$ kubectl get akit
 NAME          AGE
 akit-sample   16s
 
-[kirater@training-kfs-minikube kiraop]$ kubectl -n mions get all
+$ kubectl -n mions get all
 NAME                        READY   STATUS    RESTARTS   AGE
-pod/akit-768dbfc955-xcpcg   1/1     Running   0          16s
+pod/akit-5cf7b8469-srbc4   1/1     Running   0          16s
 
 NAME              TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)        AGE
-service/akit      ClusterIP      10.100.144.58   <none>           80/TCP         13s
-service/akit-lb   LoadBalancer   10.102.202.28   192.168.99.101   80:31147/TCP   11s
+service/akit      ClusterIP      10.96.180.87    <none>           80/TCP         14s
+service/akit-lb   LoadBalancer   10.111.247.71   192.168.99.220   80:30908/TCP   12s
 
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
 deployment.apps/akit   1/1     1            1           16s
 
-NAME                              DESIRED   CURRENT   READY   AGE
-replicaset.apps/akit-768dbfc955   1         1         1       16s
+NAME                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/akit-5cf7b8469   1         1         1       16s
 ```
 
 And, just for fun:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ curl -s 192.168.99.101 | grep Welcome
+$ curl -s 192.168.99.220 | grep Welcome
 <title>Welcome to nginx!</title>
 <h1>Welcome to nginx!</h1>
 ```
@@ -324,8 +326,8 @@ A user that wants to get details about the operator's Custom Resource will
 use `kubectl explain` as follows:
 
 ```console
-[kirater@training-kfs-minikube kiraop]$ kubectl explain akits.cache.kiratech.it
-GROUP:      cache.kiratech.it
+[kirater@training-kfs-minikube kiraop]$ kubectl explain akits.kiratech.it
+GROUP:      kiratech.it
 KIND:       Akit
 VERSION:    v1alpha1
 
@@ -343,31 +345,4 @@ FIELDS:
 ```
 
 The content of this was generated by the SDK and can be customized by editing
-the `config/crd/bases/cache.kiratech.it_akits.yaml` file.
-
-## Deploying a specific operator's version
-
-Specific operator versions can be created or deployed by using the `VERSION`
-environmental variable.
-To build and push a new version of the operator:
-
-To deploy it:
-
-```console
-[kirater@training-kfs-minikube kiraop]$ VERSION=0.0.3 make docker-build docker-push
-...
-...
-```
-
-This will produce an image named `quay.io/mmul/kiraop:0.0.3` and to deploy it:
-
-```console
-[kirater@training-kfs-minikube kiraop]$ VERSION=0.0.3 make deploy
-cd config/manager && /home/kirater/operators/kiraop/bin/kustomize edit set image controller=quay.io/mmul/kiraop:0.0.3
-/home/kirater/operators/kiraop/bin/kustomize build config/default | kubectl apply -f -
-...
-...
-```
-
-It is useful to remember the role of the `latest` tag, which represents the
-latest deployed image.
+the `config/crd/bases/kiratech.it_akits.yaml` file.

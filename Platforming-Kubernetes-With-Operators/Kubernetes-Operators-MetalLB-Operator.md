@@ -3,12 +3,31 @@
 In this lab you will install, configure and create the custom resources from
 the MetalLB operator.
 
+## Operator's requirements
+
+To enable the Kubernetes cluster properly support MetalLB, the `ipvs`
+configuration of the `KubeProxyConfiguration` resource needs to have the
+`strictARP` setting to true (check the [MetalLB offical documentation](https://metallb.universe.tf/installation/#preparation)).
+
+This is a one command operation:
+
+```console
+$ kubectl get configmap kube-proxy -n kube-system -o yaml | \
+sed -e "s/strictARP: false/strictARP: true/" | \
+kubectl apply -f - -n kube-system
+configmap/kube-proxy configured
+```
+
+It is now time to install the operator.
+
 ## Operator's initialization
 
 Installation can be made directly by pointing to the GitHub's yaml:
 
 ```console
-$ kubectl create -f https://raw.githubusercontent.com/metallb/metallb-operator/main/bin/metallb-operator.yaml
+$ export METALLB_VERSION='v0.13.11'
+
+$ kubectl create -f https://raw.githubusercontent.com/metallb/metallb-operator/${METALLB_VERSION}/bin/metallb-operator.yaml
 namespace/metallb-system created
 ...
 clusterrolebinding.rbac.authorization.k8s.io/metallb-system:speaker created
@@ -49,6 +68,37 @@ NAME                                                             DESIRED   CURRE
 replicaset.apps/metallb-operator-controller-manager-7c46d89759   1         1         1       15m
 replicaset.apps/metallb-operator-webhook-server-7ccc476797       1         1         1       15m
 ```
+
+### Recent MetalLB versions and node labels
+
+A change applied in the `0.14.*` versions of MetalLB checks for the presence (or
+not) of a specific label named `exclude-from-external-load-balancers` on the
+nodes, and if it is present IP advertisment (and so the load balancer itself)
+will not work.
+
+To check if the label is present on the nodes use `kubectl`:
+
+```console
+$ kubectl get nodes --selector=node.kubernetes.io/exclude-from-external-load-balancers
+NAME              STATUS   ROLES           AGE   VERSION
+training-kfs-01   Ready    control-plane   55m   v1.30.4
+training-kfs-02   Ready    control-plane   55m   v1.30.4
+training-kfs-03   Ready    control-plane   54m   v1.30.4
+```
+
+Since this lab is an hyperconverged one, where nodes act both as control-plane
+and workers, it is safe to remove that label to make MetalLB work properly:
+
+```console
+$ for node in $(kubectl get nodes --selector=node.kubernetes.io/exclude-from-external-load-balancers -o name); do \
+    kubectl label $node node.kubernetes.io/exclude-from-external-load-balancers-; \
+  done
+node/training-kfs-01 unlabeled
+node/training-kfs-02 unlabeled
+node/training-kfs-03 unlabeled
+```
+
+For more details about this, check [this GitHub issue in the MetalLB project](https://github.com/metallb/metallb-operator/issues/490).
 
 ## Activate MetalLB instance
 
@@ -112,6 +162,7 @@ metadata:
 spec:
   ipAddressPools:
   - mypool1
+EOF
 ```
 
 This will enable the configured pool to be advertised inside the destination
