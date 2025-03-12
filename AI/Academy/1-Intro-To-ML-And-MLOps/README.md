@@ -16,17 +16,20 @@ The first part focuses on Scikit-learn and the weather dataset. The second part 
 
 Before we begin, we need to ensure we have everything required to run the lab properly.  
 
-#### **Requirements**
+### **Requirements**
 
 This lab assumes that **Python** and **miniconda** are already installed, the repository [kiratech/labs](https://github.com/kiratech/labs.git) is accessible, and **Git** is properly configured on your local machine. Furthermore, **VSCode** or an IDE able to run Jupyter Notebooks, must be installed as well.  
 In order to execute this laboratory, you will be asked to install a set of tools common in Machine Learning field:
+
 - [**scikit-learn**](https://scikit-learn.org/stable/index.html): Machine learning library with modeling and evaluation tools.
 - [**pandas**](https://pandas.pydata.org/): Framework for data manipulation and analysis in Python.
 - [**seaborn**](https://seaborn.pydata.org/): Data visualization library based on Matplotlib.
 - [**mlflow**](https://mlflow.org/): Tool for tracking and managing machine learning experiments.  
 
 ### 1. Clone the Repository
+
 To start, clone the lab repository by running the following command in the terminal:
+
 ```sh
   git clone https://github.com/kiratech/labs.git
 ```
@@ -44,6 +47,7 @@ Then, checkout the `lab` branch:
 ```sh
   git checkout academy-ai
 ```
+
 This folder contains resources related to AI-themed labs.
 
 ### 3. Navigate to the 1-Intro-To-ML-And-MLOps Folder
@@ -57,6 +61,7 @@ Go to the folder of the first lab:
 ### 4. Open the Project in VSCode
 
 At this point, open VSCode from the file explorer or by running the command:
+
 ```sh
   code .
 ```
@@ -72,6 +77,7 @@ Using the **VSCode** terminal, create a virtual environment:
 ```
 
 Activate the Virtual Environment:
+
 ```sh
   conda activate lab_env
 ```
@@ -82,16 +88,19 @@ You should see the `(lab_env)` prefix in the terminal, indicating that the virtu
 
 Besides the default packages in the environment, additional libraries may be needed for the lab.  
 Before installing them, it's always a good practice to update `pip` to avoid compatibility issues:
+
 ```sh
   pip install --upgrade pip
 ```  
 
 Now, install some essential packages for data analysis and machine learning:
+
 ```sh
   pip install scikit-learn pandas seaborn mlflow ipykernel
 ```  
 
 Verify that the packages were installed correctly with:  
+
 ```sh
   conda list
 ```  
