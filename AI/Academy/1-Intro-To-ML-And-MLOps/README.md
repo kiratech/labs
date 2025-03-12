@@ -1,98 +1,99 @@
-# Lab: Modello ML di base con Dataset Meteo + Integrazione MLflow
+# Lab: Basic ML Model with Weather Dataset + MLflow Integration
 
-Benvenuto in questo laboratorio! Qui imparerai a:
+Welcome to this lab! Here you will learn how to:
 
-1. **Caricare e preparare un dataset meteo**, con dati di temperatura e umidità.
-2. **Addestrare un modello di Machine Learning** con Scikit-learn per prevedere la pioggia.
-3. **Valutare il modello** e comprendere i risultati.
-4. **Integrare MLflow** per tracciare metriche, parametri e versioni del modello.
+1. **Load and prepare a weather dataset**, with temperature and humidity data.
+2. **Train a Machine Learning model** using Scikit-learn, a powerful tool for Machine Learning in Python, to predict rain.
+3. **Evaluate the model** computing metrics to determine how well it makes predictions on new data.
+4. **Integrate MLflow**, one of the most used tool to track metrics, parameters, and model versions.
 
-Seguiremo un approccio guidato, con spiegazioni dettagliate ad ogni passaggio.  
-La prima parte si concentra su Scikit-learn e il dataset meteo. La seconda parte estende il codice esistente con MLflow.
+We will follow a guided approach with detailed explanations at each step.  
+The first part focuses on Scikit-learn and the weather dataset. The second part extends the existing code with MLflow.
 
 ---
 
-## Parte 0: Setup dell'Environment per Python
+## Part 0: Setting Up the Python Environment
 
-Prima di iniziare, dobbiamo assicurarci di avere tutto il necessario per eseguire correttamente il laboratorio.  
+Before we begin, we need to ensure we have everything required to run the lab properly.  
 
-#### **Requisiti**
+#### **Requirements**
 
-Questo laboratorio assume che **Python** e **miniconda** siano già installati, la repository [kiratech/labs](https://github.com/kiratech/labs.git) sia accessibile e che Git sia configurato correttamente sul computer locale.
+This lab assumes that **Python** and **miniconda** are already installed, the repository [kiratech/labs](https://github.com/kiratech/labs.git) is accessible, and **Git** is properly configured on your local machine. Furthermore, **VSCode** or an IDE able to run Jupyter Notebooks, must be installed as well.  
+In order to execute this laboratory, you will be asked to install a set of tools common in Machine Learning field:
+- [**scikit-learn**](https://scikit-learn.org/stable/index.html): Machine learning library with modeling and evaluation tools.
+- [**pandas**](https://pandas.pydata.org/): Framework for data manipulation and analysis in Python.
+- [**seaborn**](https://seaborn.pydata.org/): Data visualization library based on Matplotlib.
+- [**mlflow**](https://mlflow.org/): Tool for tracking and managing machine learning experiments.  
 
-### 1. Clonare la Repository
-Per iniziare, clona la repository del laboratorio eseguendo il seguente comando nel terminale:
+### 1. Clone the Repository
+To start, clone the lab repository by running the following command in the terminal:
 ```sh
   git clone https://github.com/kiratech/labs.git
 ```
 
-### 2. Fare il Checkout del Branch Lab
+### 2. Checkout the Lab Branch
 
-Dopo aver clonato la repository, entra nella cartella del progetto:
+After cloning the repository, navigate to the project folder:
 
 ```sh
   cd labs
 ```
 
-Quindi, fai il checkout del branch `lab`:
+Then, checkout the `lab` branch:
 
 ```sh
   git checkout academy-ai
 ```
-In questa cartella sono presenti le risorse relative ai laboratori con tema AI.
+This folder contains resources related to AI-themed labs.
 
-### 3. Spostarsi nella Cartella 1-Intro-To-ML-And-MLOps
+### 3. Navigate to the 1-Intro-To-ML-And-MLOps Folder
 
-Naviga nella cartella del primo laboratorio:
+Go to the folder of the first lab:
 
 ```sh
   cd AI/Academy/1-Intro-To-ML-And-MLOps
 ```
 
-### 4. Apri il progetto in VSCode
+### 4. Open the Project in VSCode
 
-A questo punto apri VSCode dall'explorer oppure lanciando il comando:
+At this point, open VSCode from the file explorer or by running the command:
 ```sh
   code .
 ```
 
-### 5. Creare un Virtual Environment
+### 5. Create a Virtual Environment
 
-Un ambiente virtuale permette di isolare le dipendenze del progetto da quelle di sistema.
+A virtual environment allows you to isolate the project's dependencies from the system-wide ones.
 
-Tramite il terminale di **VSCode**, crea un ambiente virtuale:
+Using the **VSCode** terminal, create a virtual environment:
 
 ```sh
   conda create --name lab_env python=3.12 pip -y
 ```
 
-Attiva l'Ambiente Virtuale
+Activate the Virtual Environment:
 ```sh
   conda activate lab_env
 ```
 
-Dovresti vedere il prefisso `(lab_env)` nel terminale, indicando che l'ambiente virtuale è attivo.
+You should see the `(lab_env)` prefix in the terminal, indicating that the virtual environment is active.
 
-### 6. Installare i Pacchetti Necessari
+### 6. Install Required Packages
 
-Oltre ai pacchetti presenti di default nell'environment, è possibile che servano librerie aggiuntive per il laboratorio.  
-Prima di installarle, è sempre buona pratica aggiornare `pip` per evitare problemi di compatibilità:
+Besides the default packages in the environment, additional libraries may be needed for the lab.  
+Before installing them, it's always a good practice to update `pip` to avoid compatibility issues:
 ```sh
   pip install --upgrade pip
 ```  
 
-Ora installiamo alcuni pacchetti fondamentali per l'analisi dei dati e il machine learning:
+Now, install some essential packages for data analysis and machine learning:
 ```sh
   pip install scikit-learn pandas seaborn mlflow ipykernel
 ```  
-- [**scikit-learn**](https://scikit-learn.org/stable/index.html): Libreria per il machine learning con strumenti di modellazione e valutazione.
-- [**pandas**](https://pandas.pydata.org/): Framework per la manipolazione e l'analisi dei dati in Python.
-- [**seaborn**](https://seaborn.pydata.org/): Libreria per la visualizzazione di dati basata su Matplotlib.
-- [**mlflow**](https://mlflow.org/): Strumento per il tracciamento e la gestione di esperimenti di machine learning.  
 
-Verifica che i pacchetti siano stati installati correttamente con:  
+Verify that the packages were installed correctly with:  
 ```sh
   conda list
 ```  
 
-A questo punto si può continuare sul file `lab.ipynb`.
+At this point, you can proceed with the `lab.ipynb` file.
