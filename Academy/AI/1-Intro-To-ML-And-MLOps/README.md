@@ -55,7 +55,7 @@ This folder contains resources related to AI-themed labs.
 Go to the folder of the first lab:
 
 ```sh
-  cd AI/Academy/1-Intro-To-ML-And-MLOps
+  cd Academy/AI/1-Intro-To-ML-And-MLOps
 ```
 
 ### 4. Create a Virtual Environment
