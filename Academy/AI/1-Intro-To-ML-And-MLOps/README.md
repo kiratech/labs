@@ -58,15 +58,7 @@ Go to the folder of the first lab:
   cd AI/Academy/1-Intro-To-ML-And-MLOps
 ```
 
-### 4. Open the Project in VSCode
-
-At this point, open VSCode from the file explorer or by running the command:
-
-```sh
-  code .
-```
-
-### 5. Create a Virtual Environment
+### 4. Create a Virtual Environment
 
 A virtual environment allows you to isolate the project's dependencies from the system-wide ones.
 
@@ -84,7 +76,7 @@ Activate the Virtual Environment:
 
 You should see the `(lab_env)` prefix in the terminal, indicating that the virtual environment is active.
 
-### 6. Install Required Packages
+### 5. Install Required Packages
 
 Besides the default packages in the environment, additional libraries may be needed for the lab.  
 Before installing them, it's always a good practice to update `pip` to avoid compatibility issues:
@@ -106,3 +98,11 @@ Verify that the packages were installed correctly with:
 ```  
 
 At this point, you can proceed with the `lab.ipynb` file.
+
+### 6. Open the Project in VSCode
+
+At this point, open VSCode from the file explorer or by running the command:
+
+```sh
+  code .
+```
