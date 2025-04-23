@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlops_lab"
+version = "0.1.0"
+description = "End-to-end MLOps lab pipeline"
+authors = [{ name = "ranl", email = "lorenzo.randazzo@kiratech.ch" }]
+readme = "README.md"
+license = { text = "MIT" }
+dependencies = [
+    "scikit-learn",
+    "pandas",
+    "mlflow",
+    "prefect",
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "typer[all]",
+    "evidently",
+]
+requires-python = ">=3.11"
+
+[tool.setuptools]
+packages = ["src"]

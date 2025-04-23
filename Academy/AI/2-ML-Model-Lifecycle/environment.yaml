@@ -1,0 +1,17 @@
+name: lab_env_2
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - scikit-learn      
+      - pandas
+      - mlflow
+      - prefect==2.*
+      - fastapi
+      - uvicorn[standard]
+      - pydantic
+      - pytest
+      - nox
+      - typer[all]        
+      - evidently         # per il drift monitoring
