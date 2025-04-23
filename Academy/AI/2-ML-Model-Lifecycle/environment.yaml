@@ -2,8 +2,10 @@ name: lab_env_2
 channels: [conda-forge]
 dependencies:
   - python=3.11
+  - ipykernel
   - pip
   - pip:
+      - config
       - scikit-learn      
       - pandas
       - mlflow
