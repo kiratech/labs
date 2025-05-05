@@ -39,12 +39,6 @@ prefect server start
 
 Open: [http://localhost:4200](http://localhost:4200)  
 
-In another terminal:
-
-```bash
-prefect agent start
-```
-
 ---
 
 ## 3. Run Workflows via `make`
