@@ -1,7 +1,8 @@
 # local mlflow
-artifacts/*
-mlruns/*
-dev/*
+artifacts
+mlruns
+dev
+data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

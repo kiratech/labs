@@ -9,18 +9,11 @@ description = "End-to-end MLOps lab pipeline"
 authors = [{ name = "ranl", email = "lorenzo.randazzo@kiratech.ch" }]
 readme = "README.md"
 license = { text = "MIT" }
-dependencies = [
-    "scikit-learn",
-    "pandas",
-    "mlflow",
-    "prefect",
-    "fastapi",
-    "uvicorn[standard]",
-    "pydantic",
-    "typer[all]",
-    "evidently",
-]
+dynamic = ["dependencies"]
 requires-python = ">=3.11"
 
 [tool.setuptools]
 packages = ["src"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
