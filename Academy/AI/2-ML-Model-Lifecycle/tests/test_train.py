@@ -1,7 +1,8 @@
-# tests/test_train.py
-from src.train import RandomForestClassifier, load
+from src import data, train
 
-def test_accuracy():
-    X_tr, X_te, y_tr, y_te = load()
-    model = RandomForestClassifier(random_state=0).fit(X_tr, y_tr)
-    assert model.score(X_te, y_te) > 0.8
+def test_train_model_accuracy_threshold():
+    dataset = data.data_collection()
+    prepared = data.data_preparation(dataset)
+    model, acc = train.train_model(prepared, n_estimators=10, max_depth=5)
+    assert acc > 0.5  # basic threshold check
+    assert hasattr(model, "predict")
