@@ -179,7 +179,7 @@ Open in the browser Prefect and MLflow at:
 ### 5.1 Feature Branch Workflow
 
 - **Command**  
-In your terminal, once the conda environment is active, run:  
+    In your terminal, once the conda environment is active, run:  
 
     ```sh
     make push-feature
@@ -206,7 +206,7 @@ In your terminal, once the conda environment is active, run:
 ### 5.2 Develop Branch Workflow 
 
 - **Command**  
-In your terminal, once the conda environment is active, run:  
+    In your terminal, once the conda environment is active, run:  
 
     ```sh
     make push-develop
@@ -232,7 +232,7 @@ In your terminal, once the conda environment is active, run:
 ### 5.3 Master Branch Workflow  `make push-master`
 
 - **Command**  
-In your terminal, once the conda environment is active, run:  
+    In your terminal, once the conda environment is active, run:  
 
     ```sh
     make push-main
@@ -292,7 +292,7 @@ Expected JSON response:
 ## 6 Monitoring & Auto‑Retraining
 
 - **Command**  
-In your terminal, once the conda environment is active, run:
+    In your terminal, once the conda environment is active, run:
 
     ```sh
     python -m src.pipeline_monitoring monitoring_best
