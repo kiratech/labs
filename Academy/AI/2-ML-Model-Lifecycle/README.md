@@ -1,13 +1,15 @@
 
-
 # Lab: From Experiments to Production with Wine Classification
-Welcome to this live lab! 
+
+Welcome to this live lab!
 In the previous lab session we:
+
 1. **Created a classification model** using **Scikit-learn**, leveraging temperature and humidity to predict rain.  
 2. **Integrated MLflow** to track training parameters, log evaluation metrics, and manage model versions in a structured way.  
 3. **Explored and compared results** through the MLflow UI interface, reviewing different configurations and loading a saved model for future predictions.  
 
 In this session, you will learn how to:
+
 1. **Train a classification model** on a real dataset using `Scikit-learn`.
 2. **Manage and track your experiments** with `MLflow`.
 3. **Build CI/CD-like workflows** using `Makefile` and `nox`.
@@ -19,11 +21,13 @@ We will follow a step-by-step approach combining **code execution**, **conceptua
 ---
 
 ## 1 Context and Story
+
 A mid‑sized wine producer wants to modernise quality control.  
 Instead of relying on manual tasting alone, the company decides to analyse
 chemical characteristics of each batch and predict the wine’s *cultivar*
 (three classes) using machine learning.  
 The stakes:
+
 - **Repeatable experimentation** – new blends need fresh tuning
 - **Fast promotion** – once a model looks good, it must move to production quickly
 - **Operational monitoring** – chemical profiles may drift with soil and weather; the system must recognise drift and retrain autonomously
@@ -39,6 +43,7 @@ Originally collected at the Institute of Oenology and Viticulture in Italy, the 
 Each sample is described by **13 continuous variables** that capture key chemical properties influencing flavour and quality.
 
 ### 2.1 Features
+
 | Feature                        | Description                                 | Typical Range |
 | ------------------------------ | ------------------------------------------- | ------------- |
 | `alcohol`                      | Ethyl-alcohol content (%)                   | 11 – 14 %     |
@@ -56,25 +61,29 @@ Each sample is described by **13 continuous variables** that capture key chemica
 | `proline`                      | Proline (mg/L) – associated with mouth-feel | 270 – 1680    |
 
 ### 2.2 Target variable: `class`
+
 The classes are almost balanced (59 / 71 / 48 samples):
+
 - **Class 0** – Cultivar A
 - **Class 1** – Cultivar B
 - **Class 2** – Cultivar C
 
 ### 2.3 Why This Dataset Fits the Demo
+
 1. **Compact and clean** – You can train models in seconds, perfect for live coding.
 2. **Chemically interpretable features** – Easy to discuss how drifting alcohol content affects predictions.
 3. **Multi-class problem** – Demonstrates probabilities and class selection in the REST API.
 4. **No privacy concerns** – The data are public domain, ideal for workshops.
 
 ### 2.4 Synthetic Drift Generation
+
 To illustrate monitoring, the lab creates a *current batch* where `alcohol` values are artificially increased (e.g., harvest with higher sugar).
 Evidently then compares this drifted batch to the original reference set, detects the shift and—if severe—triggers retraining through Prefect.
-
 
 ---
 
 ## 3 Tooling Overview – Concept + Our Usage
+
 | Tool | Key Concept | How We Use It in the Lab |
 |------|-------------|--------------------------|
 | [**Makefile**](https://www.gnu.org/software/make/manual/make.html) | Declarative build/task runner | Simulates Git push events and invokes Nox sessions (`push-feature`, `push-develop`, `push-master`). |
@@ -88,25 +97,34 @@ Evidently then compares this drifted batch to the original reference set, detect
 ---
 
 ## 4 Environment Setup
+
 ### 4.0 Requirements
+
 This lab assumes that **Python** and **miniconda** are already installed, the repository [kiratech/labs](https://github.com/kiratech/labs.git) is accessible, and **Git** is properly configured on your local machine. Furthermore, **VSCode** or an IDE able to run Jupyter Notebooks, must be installed as well.  
 As in the previous lab, in order to execute this laboratory, you will be asked to install a set of tools common in MLOps field.
 
 ### 4.1  Clone the Repository
+
 To start, clone the lab repository by running the following command in the terminal:
+
 ```sh
   git clone https://github.com/kiratech/labs.git
 ```
 
 ### 4.2 Checkout the Lab Branch
+
 After cloning the repository, checkout the `academy-ai` branch:
+
 ```sh
   git checkout academy-ai
 ```  
+
 Then, navigate to the project folder:
+
 ```sh
   cd labs/Academy/AI/2-ML-Model-Lifecycle
 ```  
+
 This folder contains resources related to this lab.
 
 ### 4.3 Create a Virtual Environment
@@ -136,16 +154,18 @@ At this point, open VSCode from the file explorer or by running the command:
   code .
 ```
 
-### 4.5 Start the services 
+### 4.5 Start the services
+
 Open three integrated terminals and in each one activate the environemnt with `conda activate lab_env_2` and then:
 
 | Terminal | Command | Purpose |
 |----------|---------|---------|
 | T‑1 | `prefect server start` | Prefect API + UI |
 | T‑2 | `mlflow ui` | Experiment tracking UI |
-| T‑3 | Run workflow commands (next sections) |
+| T‑3 | `-` | Run workflow commands (next sections) |
 
 ### 4.6 Open services UI
+
 Open in the browser Prefect and MLflow at:  
 | Service | Address |
 |----------|---------|
@@ -157,11 +177,14 @@ Open in the browser Prefect and MLflow at:
 ## 5 Branch Workflows
 
 ### 5.1 Feature Branch Workflow
+
 - **Command**  
 In your terminal, once the conda environment is active, run:  
+
 ```sh
   make push-feature
 ```
+
 - **Goal**  
   Explore the parameter space quickly and cheaply. No model is intended for production at this stage.  
   We only want evidence that “something promising” exists.
@@ -177,44 +200,50 @@ In your terminal, once the conda environment is active, run:
   - MLflow UI: nine runs with different hyper‑params, no artifacts saved.
   - Prefect UI: one flow, nine parallel tasks—visual confirmation of parallel runs.
 
----
-
 ### 5.2 Develop Branch Workflow 
+
 - **Command**  
 In your terminal, once the conda environment is active, run:  
+
 ```sh
   make push-develop
 ```
+
 - **Goal**  
   Promote the best experimental configuration, validate code quality, and log a **deployable model artifact**.
 - **What the Command Simulates**  
   A merge/push to **`develop`**. CI/CD should lint, test, **re‑train with chosen hyper‑params**, and register the resulting model.
 - **What It Does**  
+  
   1. **Lint** (`ruff via pre‑commit`) and **unit tests** (`pytest`) run first. Build stops on failure.
   2. Prefect flow `train_best` queries MLflow, grabs the run with highest accuracy.
   3. It re‑trains a RandomForest using those parameters on fresh data splits.
   4. Saves the `.pkl` artifact to `artifacts/` and logs it to MLflow.
+
 - **What to Explore**
   - Terminal: lint/test output.
   - MLflow UI: a new run with an **artifact path**, this is the candidate for production.
   - Prefect UI: see the “find best params” task feeding the “train” task.
 
----
-
 ### 5.3 Master Branch Workflow  `make push-master`
+
 - **Command**  
 In your terminal, once the conda environment is active, run:  
+
 ```sh
   make push-main
 ```
+
 - **Goal**  
   Deploy the champion model as an HTTP service usable by downstream teams.
 - **What the Command Simulates**  
   A merge/push to **`main`**. CI/CD should perform a last sanity check, then bring the model online.
 - **What It Does**  
+  
   1. Re‑runs lint and tests (quick safety net).
   2. Prefect flow `serve_best` downloads the best model artifact from MLflow.
   3. Builds a FastAPI app and launches Uvicorn on **port 9000**.
+
 - **What to Explore**
   - Swagger UI at `http://127.0.0.1:9000/docs`: live documentation, try a prediction.
   - Prefect UI: a small flow made of download, build app and serve.
@@ -250,25 +279,30 @@ Expected JSON response:
   "class": 1,
   "proba": [0.02, 0.95, 0.03]
 }
-```  
+```
 
 ---
 
 ## 6 Monitoring & Auto‑Retraining 
+
 - **Command**  
 In your terminal, once the conda environment is active, run:  
+
 ```sh
   python -m src.pipeline_monitoring monitoring_best
 ```
+
 - **Goal**  
   Detect distributional drift and kick off retraining only when needed.
 - **What the Command Simulates**  
   A **scheduled batch job** (cron in Prefect) that runs nightly, comparing that day’s data against a reference baseline.
 - **What It Does**  
+  
   1. Generates (or ingests) the **current batch**. Here we synthesise drift by nudging alcohol levels.
   2. Evidently creates an HTML + JSON drift report.
   3. Prefect parses the `alchol` feature p‑value between the training set distribution and the new drifted set distribution. If ≤ 0.05, it calls the same `train_best` flow used on develop.
   4. All actions—report generation and optional retraining—are logged in Prefect and MLflow.
+
 - **What to Explore**
   - Drift Report: open `artifacts/drift_report.html`; discuss which features drifted.
   - Prefect UI: see conditional branching—one path ends, the other chains into a training flow.
@@ -279,6 +313,7 @@ In your terminal, once the conda environment is active, run:
 ## 7 Conclusions
 
 Over the course of this lab we have:
+
 - **Simulated a full CI/CD loop locally**
   using Makefile to trigger branch‑style workflows and Nox as a lightweight stand‑in for GitHub Actions.
 - **Captured the complete model lineage**
