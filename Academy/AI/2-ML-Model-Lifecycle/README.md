@@ -36,6 +36,7 @@ Our lab demonstrates how to meet these requirements **entirely on a laptop**,
 using open‑source tools and zero cloud resources.
 
 ---
+
 ## 2 Dataset Overview – UCI Wine Recognition
 
 The lab uses the well-known [**Wine Recognition**](https://archive.ics.uci.edu/dataset/109/wine) dataset from the UCI Machine Learning Repository.
@@ -192,11 +193,14 @@ In your terminal, once the conda environment is active, run:
   A developer pushes code to **`feature/<experiment‑name>`**.  
   CI/CD should **only run experiments**, producing metrics the team can compare later.
 - **What It Does**
+
   - A Nox session calls Prefect flow `train_experiment`.
   - Nine RandomForest training tasks run in parallel (3  `n_estimators` × 3  `max_depth`).
   - Each task logs **parameters + accuracy** to MLflow, but **does not store a model file**.
   - Prefect captures task logs and execution graph.
+
 - **What to Explore**
+
   - MLflow UI: nine runs with different hyper‑params, no artifacts saved.
   - Prefect UI: one flow, nine parallel tasks—visual confirmation of parallel runs.
 
@@ -214,13 +218,14 @@ In your terminal, once the conda environment is active, run:
 - **What the Command Simulates**  
   A merge/push to **`develop`**. CI/CD should lint, test, **re‑train with chosen hyper‑params**, and register the resulting model.
 - **What It Does**  
-  
+
   1. **Lint** (`ruff via pre‑commit`) and **unit tests** (`pytest`) run first. Build stops on failure.
   2. Prefect flow `train_best` queries MLflow, grabs the run with highest accuracy.
   3. It re‑trains a RandomForest using those parameters on fresh data splits.
   4. Saves the `.pkl` artifact to `artifacts/` and logs it to MLflow.
 
 - **What to Explore**
+
   - Terminal: lint/test output.
   - MLflow UI: a new run with an **artifact path**, this is the candidate for production.
   - Prefect UI: see the “find best params” task feeding the “train” task.
@@ -239,15 +244,17 @@ In your terminal, once the conda environment is active, run:
 - **What the Command Simulates**  
   A merge/push to **`main`**. CI/CD should perform a last sanity check, then bring the model online.
 - **What It Does**  
-  
+
   1. Re‑runs lint and tests (quick safety net).
   2. Prefect flow `serve_best` downloads the best model artifact from MLflow.
   3. Builds a FastAPI app and launches Uvicorn on **port 9000**.
 
 - **What to Explore**
+
   - Swagger UI at `http://127.0.0.1:9000/docs`: live documentation, try a prediction.
   - Prefect UI: a small flow made of download, build app and serve.
   - MLflow UI: confirm the run ID of the served model matches the develop stage.
+
 ### 5.4 Querying the Best Model
 
 Once the **main branch workflow** has deployed the FastAPI service, you can send a prediction request directly from the terminal:
@@ -283,10 +290,10 @@ Expected JSON response:
 
 ---
 
-## 6 Monitoring & Auto‑Retraining 
+## 6 Monitoring & Auto‑Retraining
 
-- **Command**  
-In your terminal, once the conda environment is active, run:  
+- **Command**
+In your terminal, once the conda environment is active, run: 
 
 ```sh
   python -m src.pipeline_monitoring monitoring_best
@@ -297,13 +304,14 @@ In your terminal, once the conda environment is active, run:
 - **What the Command Simulates**  
   A **scheduled batch job** (cron in Prefect) that runs nightly, comparing that day’s data against a reference baseline.
 - **What It Does**  
-  
+
   1. Generates (or ingests) the **current batch**. Here we synthesise drift by nudging alcohol levels.
   2. Evidently creates an HTML + JSON drift report.
   3. Prefect parses the `alchol` feature p‑value between the training set distribution and the new drifted set distribution. If ≤ 0.05, it calls the same `train_best` flow used on develop.
   4. All actions—report generation and optional retraining—are logged in Prefect and MLflow.
 
 - **What to Explore**
+
   - Drift Report: open `artifacts/drift_report.html`; discuss which features drifted.
   - Prefect UI: see conditional branching—one path ends, the other chains into a training flow.
   - MLflow UI: a new run appears **only** when drift threshold is exceeded, proving closed‑loop automation.
@@ -329,5 +337,8 @@ Together these elements demonstrate an end‑to‑end, production‑style MLOps 
 The key takeaway: **tooling synergy** matters more than individual components.
 By combining focused, purpose‑built tools, we achieve reproducibility, observability and automation without heavyweight infrastructure.
 
+---
+
 ## 8 Next steps
+
 TBD
