@@ -1,14 +1,28 @@
+"""
+Unit test for FastAPI model serving without relying on a pre-existing trained model.
+
+- Creates a dummy RandomForestClassifier
+- Saves it to a temporary .pkl file
+- Builds the FastAPI app using the test model
+- Sends a prediction request to /predict
+"""
+
+import tempfile
+import joblib
+from pathlib import Path
+from fastapi.testclient import TestClient
+from sklearn.ensemble import RandomForestClassifier
+import pandas as pd
 from src import serve
-from src.config import CFG
 
 def test_build_app_and_predict():
-    # Carica modello (assicurati che esista già da train_best)
-    model_path = CFG.artifacts_dir / CFG.model_name
-    assert model_path.exists(), "Trained model file is missing"
-
-    api = serve.build_app(model_path)
-
-    sample = {
+    """
+    Test that the FastAPI app is correctly built with a temporary dummy model,
+    and that the /predict endpoint returns a valid response.
+    """
+    # --- Create a dummy model and train it on minimal synthetic data ---
+    model = RandomForestClassifier()
+    X_dummy = pd.DataFrame([{
         "alcohol": 13.0,
         "malic_acid": 2.0,
         "ash": 2.5,
@@ -22,11 +36,24 @@ def test_build_app_and_predict():
         "hue": 1.0,
         "od280_od315_of_diluted_wines": 3.0,
         "proline": 1000,
-    }
+    }])
+    y_dummy = [1]
+    model.fit(X_dummy, y_dummy)
 
-    from fastapi.testclient import TestClient
+    # --- Save model to a temporary .pkl file ---
+    with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as tmp:
+        model_path = Path(tmp.name)
+        joblib.dump(model, model_path)
+
+    # --- Build FastAPI app using the dummy model ---
+    api = serve.build_app(model_path)
+
+    # --- Create a test client and send a sample request ---
+    sample = X_dummy.iloc[0].to_dict()
     client = TestClient(api)
     response = client.post("/predict", json=sample)
+
+    # --- Assertions ---
     assert response.status_code == 200
     result = response.json()
     assert "class" in result
