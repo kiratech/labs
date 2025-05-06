@@ -1,4 +1,3 @@
-
 # Lab: From Experiments to Production with Wine Classification
 
 Welcome to this live lab!
@@ -182,9 +181,9 @@ Open in the browser Prefect and MLflow at:
 - **Command**  
 In your terminal, once the conda environment is active, run:  
 
-```sh
-  make push-feature
-```
+    ```sh
+    make push-feature
+    ```
 
 - **Goal**  
   Explore the parameter space quickly and cheaply. No model is intended for production at this stage.  
@@ -209,9 +208,9 @@ In your terminal, once the conda environment is active, run:
 - **Command**  
 In your terminal, once the conda environment is active, run:  
 
-```sh
-  make push-develop
-```
+    ```sh
+    make push-develop
+    ```
 
 - **Goal**  
   Promote the best experimental configuration, validate code quality, and log a **deployable model artifact**.
@@ -235,9 +234,9 @@ In your terminal, once the conda environment is active, run:
 - **Command**  
 In your terminal, once the conda environment is active, run:  
 
-```sh
-  make push-main
-```
+    ```sh
+    make push-main
+    ```
 
 - **Goal**  
   Deploy the champion model as an HTTP service usable by downstream teams.
@@ -292,12 +291,12 @@ Expected JSON response:
 
 ## 6 Monitoring & Auto‑Retraining
 
-- **Command**
-In your terminal, once the conda environment is active, run: 
+- **Command**  
+In your terminal, once the conda environment is active, run:
 
-```sh
-  python -m src.pipeline_monitoring monitoring_best
-```
+    ```sh
+    python -m src.pipeline_monitoring monitoring_best
+    ```
 
 - **Goal**  
   Detect distributional drift and kick off retraining only when needed.
