@@ -84,6 +84,8 @@ Evidently then compares this drifted batch to the original reference set, detect
 
 ## 3 Tooling Overview
 
+[<img src="imgs/lab-full.png" alt="End-to-End Workflow" width="1000"/>](imgs/lab-full.png)
+
 ### 3.1  Tools, concepts and our usage
 
 | Tool | Key Concept | How We Use It in the Lab |
@@ -97,8 +99,6 @@ Evidently then compares this drifted batch to the original reference set, detect
 | [**Evidently**](https://docs.evidentlyai.com/introduction) | Data drift & model monitoring | Generates HTML/JSON drift reports; triggers retraining when drift is detected. |
 
 ### 3.2  Why We Simulate GitHub Actions Locally
-
-[<img src="imgs/lab-full.png" alt="End-to-End Workflow" width="1000"/>](imgs/lab-full.png)
 
 In production we would rely on **real Git events and GitHub Actions**:
 
