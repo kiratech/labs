@@ -82,17 +82,48 @@ Evidently then compares this drifted batch to the original reference set, detect
 
 ---
 
-## 3 Tooling Overview – Concept + Our Usage
+## 3 Tooling Overview
+
+### 3.1  Tools, concepts and our usage
 
 | Tool | Key Concept | How We Use It in the Lab |
 |------|-------------|--------------------------|
-| [**Makefile**](https://www.gnu.org/software/make/manual/make.html) | Declarative build/task runner | Simulates Git push events and invokes Nox sessions (`push-feature`, `push-develop`, `push-master`). |
+| [**Makefile**](https://www.gnu.org/software/make/manual/make.html) | Declarative build/task runner | Simulates Git push events and invokes Nox sessions (`push-feature`, `push-develop`, `push-main`). |
 | [**Nox**](https://nox.thea.codes/en/stable/) | Python automation with virtual/conda envs | Acts like GitHub Actions runners; executes lint, tests and Prefect flows in a reproducible and isolated way. |
 | [**Prefect**](https://docs.prefect.io/v3/get-started) | Workflow orchestration + observability | Wraps training, serving and monitoring as flows; offers scheduling, retries and a UI at [http://127.0.0.1:4200](http://127.0.0.1:4200). |
 | [**MLflow**](https://mlflow.org/) | Experiment tracking & model registry | Logs parameters, metrics and model artefacts; source of truth for the “best model”. UI at [http://127.0.0.1:5000](http://127.0.0.1:5000). |
 | [**Scikit-learn**](https://scikit-learn.org/stable/index.html) | ML algorithms and utilities | Provides a fast RandomForest classifier for our demo. |
 | [**FastAPI**](https://fastapi.tiangolo.com/) | High‑performance Python web API | Exposes the model at `/predict` with auto‑generated docs at [http://127.0.0.1:9000](http://127.0.0.1:9000). |
 | [**Evidently**](https://docs.evidentlyai.com/introduction) | Data drift & model monitoring | Generates HTML/JSON drift reports; triggers retraining when drift is detected. |
+
+### 3.2  Why We Simulate GitHub Actions Locally
+
+[<img src="imgs/lab-full.png" alt="End-to-End Workflow" width="1000"/>](imgs/lab-full.png)
+
+In production we would rely on **real Git events and GitHub Actions**:
+
+| Real event                                | Real GH Action (example)                      | Purpose                             |
+| ----------------------------------------- | --------------------------------------------- | ----------------------------------- |
+| `git push feature/experiments` | `ci-feature.yml` → sweep experiment | Run many trials, log only metrics |
+| `git merge feature/experiments (into develop)` | `ci-develop.yml` → lint + tests + train best | Promote best params, prepare model |
+| `git merge develop (into main)` | `ci-main.yml` → lint + tests + deploy best | Bring model online |
+
+For a laboratory setting those actions pose two practical problems:
+
+1. **Concurrency & permissions** – the whole group cannot push to `develop` or `main` at the same time without overwriting one another.
+2. **Infrastructure dependencies** – real GH Actions would need publicly reachable Prefect and MLflow endpoints; everyone would have to expose tunnels or deploy cloud services.
+
+To keep the experience **100 % local**, we introduce a one-to-one mapping:
+
+| Simulated command | What it stands for |
+| --------------------------------------------------- | ------------------------------------------------------ |
+| `make push-feature` | `git push feature/experiments` trigger GH Action `ci-feature.yml` |
+| `make push-develop` | `git merge feature/experiments (into develop)` trigger GH Action `ci-develop.yml`   |
+| `make push-main` | `git merge develop (into main)` trigger GH Action `ci-main.yml`   |
+| `python -m src.pipeline_monitoring monitoring_best` | Nightly cron job in GH Actions or Prefect Cloud |
+
+Under the hood **Nox** replaces the GitHub runner:
+`make push-*` commands launch the appropriate nox sessions (lint / tests / Prefect flows) inside a shared Conda environment, reproducing exactly what would happen in cloud CI—but without leaving the laptop.
 
 ---
 
@@ -176,7 +207,16 @@ Open in the browser Prefect and MLflow at:
 
 ## 5 Branch Workflows
 
+### 5.0  What we will do
+
+A production-style GitHub Actions workflow we want to **experience locally**.  
+In the laboratory we replay each numbered block with Makefile + Nox + Prefect, avoiding concurrent pushes and external infrastructure.
+
+[<img src="imgs/lab-full.png" alt="End-to-End Workflow" width="1000"/>](imgs/lab-full.png)
+
 ### 5.1 Feature Branch Workflow
+
+[<img src="imgs/lab-part1.png" alt="Feature Workflow" width="1000"/>](imgs/lab-part1.png)
 
 - **Command**  
     In your terminal, once the conda environment is active, run:  
@@ -194,7 +234,7 @@ Open in the browser Prefect and MLflow at:
 - **What It Does**
 
   - A Nox session calls Prefect flow `train_experiment`.
-  - Nine RandomForest training tasks run in parallel (3  `n_estimators` × 3  `max_depth`).
+  - 9 RandomForest training tasks run in parallel (3  `n_estimators` × 3  `max_depth`).
   - Each task logs **parameters + accuracy** to MLflow, but **does not store a model file**.
   - Prefect captures task logs and execution graph.
 
@@ -204,6 +244,8 @@ Open in the browser Prefect and MLflow at:
   - Prefect UI: one flow, nine parallel tasks—visual confirmation of parallel runs.
 
 ### 5.2 Develop Branch Workflow 
+
+[<img src="imgs/lab-part2.png" alt="Develop Workflow" width="1000"/>](imgs/lab-part2.png)
 
 - **Command**  
     In your terminal, once the conda environment is active, run:  
@@ -229,7 +271,9 @@ Open in the browser Prefect and MLflow at:
   - MLflow UI: a new run with an **artifact path**, this is the candidate for production.
   - Prefect UI: see the “find best params” task feeding the “train” task.
 
-### 5.3 Master Branch Workflow  `make push-master`
+### 5.3 Main Branch Workflow
+
+[<img src="imgs/lab-part3.png" alt="Main Workflow" width="1000"/>](imgs/lab-part3.png)
 
 - **Command**  
     In your terminal, once the conda environment is active, run:  
@@ -291,6 +335,8 @@ Expected JSON response:
 
 ## 6 Monitoring & Auto‑Retraining
 
+[<img src="imgs/lab-part4.png" alt="Feature Workflow" width="1000"/>](imgs/lab-part4.png)
+
 - **Command**  
     In your terminal, once the conda environment is active, run:
 
@@ -304,10 +350,10 @@ Expected JSON response:
   A **scheduled batch job** (cron in Prefect) that runs nightly, comparing that day’s data against a reference baseline.
 - **What It Does**  
 
-  1. Generates (or ingests) the **current batch**. Here we synthesise drift by nudging alcohol levels.
-  2. Evidently creates an HTML + JSON drift report.
-  3. Prefect parses the `alchol` feature p‑value between the training set distribution and the new drifted set distribution. If ≤ 0.05, it calls the same `train_best` flow used on develop.
-  4. All actions—report generation and optional retraining—are logged in Prefect and MLflow.
+  - Generates (or ingests) the **current batch**. Here we synthesise drift by nudging alcohol levels.
+  - Evidently creates an HTML + JSON drift report.
+  - Prefect parses the `alchol` feature p‑value between the training set distribution and the new drifted set distribution. If ≤ 0.05, it calls the same `train_best` flow used on develop.
+  - All actions—report generation and optional retraining—are logged in Prefect and MLflow.
 
 - **What to Explore**
 
@@ -321,7 +367,7 @@ Expected JSON response:
 
 Over the course of this lab we have:
 
-- **Simulated a full CI/CD loop locally**
+- **Simulated a full CI/CD/CT loop locally**
   using Makefile to trigger branch‑style workflows and Nox as a lightweight stand‑in for GitHub Actions.
 - **Captured the complete model lineage**
   in MLflow, from exploratory runs to the promoted, deployable artifact.
@@ -335,9 +381,3 @@ Over the course of this lab we have:
 Together these elements demonstrate an end‑to‑end, production‑style MLOps workflow that fits entirely on a developer laptop—yet scales conceptually to cloud or on‑prem environments.  
 The key takeaway: **tooling synergy** matters more than individual components.
 By combining focused, purpose‑built tools, we achieve reproducibility, observability and automation without heavyweight infrastructure.
-
----
-
-## 8 Next steps
-
-TBD
