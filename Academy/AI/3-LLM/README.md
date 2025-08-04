@@ -19,15 +19,16 @@ We'll leverage two big providers for this lab:
 - **Google Colab**: a free, browser-based Jupyter environment hosted by Google. Colab gives you a temporary Linux VM with Python, CUDA drivers, and optional GPU/TPU. You open a .ipynb notebook, run cells just like in Jupyter, and share links with classmates—no local setup required.
 
 - **Hugging Face**: A community and tooling hub for modern AI.  
-It offers:
-    
+
+    It offers:
+
     - Model Hub: 500 k-plus pre-trained models (transformers, diffusers, etc.).
     - Datasets Hub: curated datasets in one-line API.
     - Inference API / Endpoints: hosted model inference in the cloud.
     - Libraries: transformers, datasets, peft, and more.
 
     Creating a (free) HF account lets you:
-    
+
     - Download models.
     - Push your own models/adapters/data.
     - Generate an access token that notebooks use to call hosted endpoints securely.
@@ -75,5 +76,5 @@ From now you can continue on the notebooks.
 
 ## Suggested readings and references
 
-- [OpenAI Cookbook – GPT‑4 Prompting Guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide): a new prompting guide that lays out a practical structure for building powerful prompts, especially with GPT-4.1. It’s short, clear, and highly effective for anyone working with agents, structured outputs, tool use, or reasoning-heavy tasks. 
-- [Google Prompt Engineering pdf](https://drive.google.com/file/d/1AbaBYbEa_EbPelsT40-vj64L-2IwUJHy/view): whether you're technical or non-technical, this might be one of the most useful prompt engineering resources out there right now. Google just published a 68-page whitepaper focused on Prompt Engineering (focused on API users), and it goes deep on structure, formatting, config settings, and real examples. 
+- [OpenAI Cookbook – GPT‑4 Prompting Guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide): a new prompting guide that lays out a practical structure for building powerful prompts, especially with GPT-4.1. It’s short, clear, and highly effective for anyone working with agents, structured outputs, tool use, or reasoning-heavy tasks.
+- [Google Prompt Engineering pdf](https://drive.google.com/file/d/1AbaBYbEa_EbPelsT40-vj64L-2IwUJHy/view): whether you're technical or non-technical, this might be one of the most useful prompt engineering resources out there right now. Google just published a 68-page whitepaper focused on Prompt Engineering (focused on API users), and it goes deep on structure, formatting, config settings, and real examples.
