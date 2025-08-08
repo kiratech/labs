@@ -69,6 +69,29 @@ We'll leverage two big providers for this lab:
 
 ## Run the notebooks in Colab
 
+### 1  Clone the Repository
+
+To start, clone the lab repository by running the following command in the terminal:
+
+```sh
+  git clone https://github.com/kiratech/labs.git
+```
+
+### 2 Checkout the Lab Branch
+
+After cloning the repository, checkout the `academy-ai` branch:
+
+```sh
+  git checkout academy-ai
+```  
+
+Then, navigate to the project folder:
+
+```sh
+  cd labs/Academy/AI/3-LLM
+```  
+
+This folder contains resources related to this lab.  
 Open Google Colab and import, everything at root level, the content of the folders notebooks and files.  
 From now you can continue on the notebooks.  
 
