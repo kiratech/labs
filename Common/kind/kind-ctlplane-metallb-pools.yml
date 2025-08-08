@@ -1,17 +1,17 @@
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: mypool
+  name: ctlplane-ip-pool
   namespace: metallb-system
 spec:
   addresses:
-  - 172.18.0.140-172.18.0.150
+  - 172.18.0.100-172.18.0.110
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
-  name: mypool
+  name: ctlplane-l2adv
   namespace: metallb-system
 spec:
   ipAddressPools:
-  - mypool
+  - ctlplane-ip-pool

@@ -1,0 +1,25 @@
+---
+loki:
+  commonConfig:
+    replication_factor: 1
+  useTestSchema: true
+  storage:
+    bucketNames:
+      chunks: chunks
+      ruler: ruler
+      admin: admin
+  auth_enabled: false
+  limits_config:
+    # Added after Stage 2 tests failing with
+    # ValueError: Unexpected Loki API response status code: 429
+    # Check: https://github.com/grafana/loki/issues/11836#issuecomment-2325531717
+    max_global_streams_per_user: 0
+deploymentMode: SingleBinary
+singleBinary:
+  replicas: 1
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
