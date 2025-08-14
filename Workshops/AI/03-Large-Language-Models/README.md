@@ -88,7 +88,7 @@ After cloning the repository, checkout the `academy-ai` branch:
 Then, navigate to the project folder:
 
 ```sh
-  cd labs/Academy/AI/3-LLM
+  cd labs/Workshops/AI/03-Large-Language-Models
 ```  
 
 This folder contains resources related to this lab.  
@@ -99,5 +99,6 @@ From now you can continue on the notebooks.
 
 ## Suggested readings and references
 
-- [OpenAI Cookbook – GPT‑4 Prompting Guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide): a new prompting guide that lays out a practical structure for building powerful prompts, especially with GPT-4.1. It’s short, clear, and highly effective for anyone working with agents, structured outputs, tool use, or reasoning-heavy tasks.
+- [OpenAI Cookbook – GPT‑4 Prompting Guide](https://cookbook.openai.com/examples/gpt4-1_prompting_guide): a prompting guide that lays out a practical structure for building powerful prompts, especially with GPT-4.1. It’s short, clear, and highly effective for anyone working with agents, structured outputs, tool use, or reasoning-heavy tasks.
+- [OpenAI Cookbook – GPT‑5 Prompting Guide](https://cookbook.openai.com/examples/gpt-5/gpt-5_prompting_guide): New guide!
 - [Google Prompt Engineering pdf](https://drive.google.com/file/d/1AbaBYbEa_EbPelsT40-vj64L-2IwUJHy/view): whether you're technical or non-technical, this might be one of the most useful prompt engineering resources out there right now. Google just published a 68-page whitepaper focused on Prompt Engineering (focused on API users), and it goes deep on structure, formatting, config settings, and real examples.
