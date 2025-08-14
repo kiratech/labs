@@ -3,7 +3,8 @@
 In this lab you will:
 
 1. Check the status of your minikube instance.
-2. Using the `kubectl clusterinfo` and `kubectl version` command, get status and release of the cluster.
+2. Using the `kubectl clusterinfo` and `kubectl version` command, get status and
+   release of the cluster.
 3. Using the `kubectl get nodes` command, get the total number of nodes.
 4. Take a look at the configuration using `kubectl config view`.
 
@@ -21,7 +22,7 @@ In this lab you will:
    kubeconfig: Configured
    ```
 
-2. Launch `kubectl cluster-info` and `kubectl version --short`:
+2. Launch `kubectl cluster-info` and `kubectl version`:
 
    ```console
    $ kubectl cluster-info
@@ -30,8 +31,7 @@ In this lab you will:
 
    To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
 
-   $ kubectl version --short
-   Flag --short has been deprecated, and will be removed in the future. The --short output will become the default.
+   $ kubectl version
    Client Version: v1.25.3
    Kustomize Version: v4.5.7
    Server Version: v1.25.3

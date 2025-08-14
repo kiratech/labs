@@ -223,7 +223,7 @@ synchronization will automatically produce the resources contained inside the
 yaml file previously defined inside the Git repository:
 
 ```console
-$ kubectl --context kind-prod --namespace kiraterns get all
+$ kubectl --namespace kiraterns --context kind-prod get all
 NAME                             READY   STATUS    RESTARTS   AGE
 pod/webserver-5d45bdd47f-t62p9   1/1     Running   0          4m10s
 
@@ -278,10 +278,10 @@ can be detailed with plenty of options. In this example a `branch` field will be
 defined for each cluster and will determine from which Git branch the contents
 of the repository will be taken.
 
-Variables in Application Set are expressed between `{{` and `}}` as in `{{cluster}}`,
-and in this specific case the `{{branch}}` variable will be used to define the
-`targetRevision` of the source, so the branch from where to take the contents of
-the repository (check [argo-appset.yml](argo-appset.yml)):
+Variables in Application Set are expressed between `{{` and `}}` as in
+`{{cluster}}`, and in this specific case the `{{branch}}` variable will be used
+to define the `targetRevision` of the source, so the branch from where to take
+the contents of the repository (check [argo-appset.yml](argo-appset.yml)):
 
 ```console
 $ cat <<EOF > argo-appset.yml
@@ -374,11 +374,11 @@ argocd/test-webserver  https://172.18.0.1:7443             default  Synced  Heal
 With everything in place a general verification can be made:
 
 ```console
-$ kubectl --context kind-prod --namespace kiraterns get services
+$ kubectl --namespace kiraterns --context kind-prod get services
 NAME        TYPE           CLUSTER-IP      EXTERNAL-IP    PORT(S)        AGE
 webserver   LoadBalancer   10.96.132.142   172.18.0.140   80:31633/TCP   12m
 
-$ kubectl --context kind-test --namespace kiraterns get services
+$ kubectl --namespace kiraterns --context kind-test get services
 NAME        TYPE           CLUSTER-IP    EXTERNAL-IP    PORT(S)        AGE
 webserver   LoadBalancer   10.96.31.57   172.18.0.120   80:31707/TCP   2m8s
 

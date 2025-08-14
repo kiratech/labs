@@ -2,18 +2,26 @@
 
 In this lab you will:
 
-1. Pull and run the `mysql` container image with the name `network-test`, exposing the 3306 port to the 3306 on the host.
+1. Pull and run the `mysql` container image with the name `network-test`,
+   exposing the 3306 port to the 3306 on the host.
 2. Obtain the PID of the container process on the host.
-3. Use the `nsenter` command (to execute a command in another namespace) on this PID so that you can launch a `tcpdump` (to be installed) on the container's network interface.
-4. From another console, connect to the exposed port and generate some traffic, monitoring what happens on the `tcpdump`.
+3. Use the `nsenter` command (to execute a command in another namespace) on this
+   PID so that you can launch a `tcpdump` (to be installed) on the container's
+   network interface.
+4. From another console, connect to the exposed port and generate some traffic,
+   monitoring what happens on the `tcpdump`.
 5. Stop the `network-test` container.
 
 ## Solution
 
-1. Use `docker run` to start MySQL container, passing the `MYSQL_ROOT_PASSWORD` environment variable:
+1. Use `docker run` to start MySQL container, passing the `MYSQL_ROOT_PASSWORD`
+   environment variable:
 
    ```console
-   $ docker run --rm --detach --name network-test -p 3306:3306 -e MYSQL_ROOT_PASSWORD=testr00t mysql
+   $ docker run --rm --detach --name network-test \
+       --env MYSQL_ROOT_PASSWORD=testr00t \
+       --publish 3306:3306 \
+       mysql
    Unable to find image 'mysql:latest' locally
    latest: Pulling from library/mysql
    996f1bba14d6: Pull complete
@@ -59,9 +67,6 @@ In this lab you will:
    And for RHEL based systems:
 
    ```console
-   $ sudo yum update
-   ...
-
    $ sudo yum -y install tcpdump
    ...
    ```
@@ -73,7 +78,9 @@ In this lab you will:
    tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
    ```
 
-4. From another console use `nc` to reach the 3306 port:
+4. From another console use `nc` to reach the 3306 port (if you need to install
+   `nc` in RHEL use `sudo yum -y install nc` and in Debian
+   `sudo apt-get -y install nc`):
 
    ```console
    $ nc -v localhost 3306
@@ -107,7 +114,9 @@ In this lab you will:
 
 ## Alternative method to get access to the network namespace
 
-Create the namespace directory `/var/run/netns` and link the system namespace associated with the process (`/proc/<PID>/ns/net`) with the container ID (`/var/run/netns/<containerID>`):
+Create the namespace directory `/var/run/netns` and link the system namespace
+associated with the process (`/proc/<PID>/ns/net`) with the container ID
+(`/var/run/netns/<containerID>`):
 
 ```console
 $ sudo mkdir /var/run/netns
@@ -117,9 +126,11 @@ $ sudo ln -s /proc/290813/ns/net /var/run/netns/network-test
 (no output)
 ```
 
-The namespace should become visible via `ip netns show`, and in addition it should be possible to exec commands within it.
+The namespace should become visible via `ip netns show`, and in addition it
+should be possible to exec commands within it.
 
-Execute `tcpdump` on this namespace so that you will be able to see all the traffic passing by `eth0`:
+Execute `tcpdump` on this namespace so that you will be able to see all the
+traffic passing by `eth0`:
 
 ```console
 $ sudo ip netns exec network-test tcpdump -i eth0 -vvv

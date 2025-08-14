@@ -101,7 +101,7 @@ In this lab you will:
    there are clues about something:
 
    ```console
-   $ docker run -it --rm --name broken-nginx \
+   $ docker run --interactive --tty --rm --name broken-nginx \
         --publish 8080:80 \
         --log-driver journald \
         www.mmul.it:5000/broken-nginx /bin/sh
@@ -176,7 +176,8 @@ In this lab you will:
 
    The result is the default NGINX page, which is correct.
 
-5. We didn't launch the container with the `--rm` option, so stop and remove the fixed-nginx container:
+5. We didn't launch the container with the `--rm` option, so stop and remove
+   the fixed-nginx container:
 
    ```console
    $ docker stop fixed-nginx

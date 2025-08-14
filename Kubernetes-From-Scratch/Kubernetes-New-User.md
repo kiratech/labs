@@ -34,7 +34,10 @@ In this lab you will:
    $ ls myuser.csr
    myuser.csr
 
-   $ openssl x509 -req -in myuser.csr -CA .minikube/ca.crt -CAkey .minikube/ca.key -CAcreateserial -out myuser.crt -days 365
+   $ openssl x509 -req -in myuser.csr \
+       -CA .minikube/ca.crt -CAkey .minikube/ca.key -CAcreateserial \
+       -days 365 \
+       -out myuser.crt
    Certificate request self-signature ok
    subject=CN = myuser, O = myns\C3\A2\C2\80\C2\8B
    ```
@@ -42,14 +45,19 @@ In this lab you will:
 4. User can now be added by first creating the context:
 
    ```console
-   $ kubectl config set-context myuser@minikube --cluster=minikube --user=myuser --namespace=myns
+   $ kubectl config set-context myuser@minikube \
+       --cluster=minikube \
+       --user=myuser \
+       --namespace=myns
    Context "myuser@minikube" created.
    ```
 
    And then by adding the credentials:
 
    ```console
-   $ kubectl config set-credentials myuser --client-certificate=./myuser.crt --client-key=./myuser.key
+   $ kubectl config set-credentials myuser \
+       --client-certificate=./myuser.crt \
+       --client-key=./myuser.key
    User "myuser" set.
    ```
 
@@ -63,7 +71,7 @@ In this lab you will:
    We can try to get all the resources in namespace `myns`:
 
    ```console
-   $ kubectl -n myns get all
+   $ kubectl --namespace myns get all
    Error from server (Forbidden): pods is forbidden: User "myuser" cannot list resource "pods" in API group "" in the namespace "myns"
    Error from server (Forbidden): replicationcontrollers is forbidden: User "myuser" cannot list resource "replicationcontrollers" in API group "" in the namespace "myns"
    Error from server (Forbidden): services is forbidden: User "myuser" cannot list resource "services" in API group "" in the namespace "myns"
@@ -76,4 +84,6 @@ In this lab you will:
    Error from server (Forbidden): jobs.batch is forbidden: User "myuser" cannot list resource "jobs" in API group "batch" in the namespace "myns"
    ```
 
-   As you can see, there's no way (yet) to get anything, because we did'nt defined a role, but the fact that we received a `forbidden` means we were able to login with the newly created certificate.
+   As you can see, there's no way (yet) to get anything, because we didn't
+   define a role, but the fact that we received a `forbidden` means we were able
+   to login with the newly created certificate.

@@ -3,14 +3,15 @@
 In this lab you will:
 
 1. Use the `myrepo` repository as the working directory.
-2. Configure the Git user name `Kirater Dev` and the email `kirater@kiratech.it`.
+2. Configure the Git user name `Kirater Dev` and the email
+   `kirater@kiratech.it`.
 3. Verify the contents of the `.git/config` file to check the updated data.
 4. Create three sample commits each one containing a text file named:
-   | File name    | Commit message | Extended commit message                       |
-   |--------------|----------------|-----------------------------------------------|
-   | `First.txt`  | First commit   | This is the description of the First commit.  |
-   | `Second.txt` | Second commit  | This is the description of the Second commit. |
-   | `Third.txt`  | Third commit   | This is the description of the Third commit.  |
+   | File name    | Commit message | Extended commit message           |
+   |--------------|----------------|-----------------------------------|
+   | `First.txt`  | First commit   | Description of the First commit.  |
+   | `Second.txt` | Second commit  | Description of the Second commit. |
+   | `Third.txt`  | Third commit   | Description of the Third commit.  |
 5. Create a file named `Fourth.txt` with some text and check its status via
    `git status`, add it to the staged files list and the use reset to remove it.
 6. Modify the previosuly created `First.txt`, check its status using `git diff`,
@@ -22,9 +23,9 @@ In this lab you will:
    `myrepo` folder. To use it as a workdir just use `cd`:
 
    ```console
-   ~ $ cd myrepo
+   $ cd /git/myrepo
 
-   ~/myrepo $ git status
+   $ git status
    On branch main
 
    No commits yet
@@ -35,10 +36,10 @@ In this lab you will:
 2. To make sure Git knows about yourself (for commit metadata):
 
    ```console
-   ~/myrepo $ git config --global user.name "Kirater Dev"
+   $ git config --global user.name "Kirater Dev"
    (no output)
 
-   ~/myrepo $ git config --global user.email "kirater@kiratech.it"
+   $ git config --global user.email "kirater@kiratech.it"
    (no output)
    ```
 
@@ -46,7 +47,7 @@ In this lab you will:
    set user because inside the `~/.gitconfig` file the metadata are stored:
 
    ```console
-   ~/myrepo $ cat ~/.gitconfig
+   $ cat ~/.gitconfig
    [user]
         name = Kirater Dev
         email = kirater@kiratech.it
@@ -59,10 +60,10 @@ In this lab you will:
 4. This can be easily achieved with a bash loop:
 
    ```console
-   ~/myrepo $ for FILEn in First Second Third; \
+   $ for FILEn in First Second Third; \
        do echo "Contents of the $FILEn file." > $FILEn\.txt; \
        git add $FILEn\.txt; \
-       git commit -m "$FILEn commit" -m "This is the description of the $FILEn commit."; \
+       git commit -m "$FILEn commit" -m "Description of the $FILEn commit."; \
        done
    [main (root-commit) b0137b3f775e] First commit
     1 file changed, 1 insertion(+)
@@ -78,14 +79,14 @@ In this lab you will:
    And created commits can be checked with `git log`:
 
    ```console
-   ~/myrepo $ git log
+   $ git log
    commit 663a198976973892e39f732eb38fdf82890440b3 (HEAD -> main)
    Author: Kirater Dev <kirater@kiratech.it>
    Date:   Tue Mar 5 14:39:03 2024 +0000
 
        Third commit
 
-       This is the description of the Third commit.
+       Description of the Third commit.
 
    commit 183d68d0e5a61462d3827adbf2fbff3182aade16
    Author: Kirater Dev <kirater@kiratech.it>
@@ -93,7 +94,7 @@ In this lab you will:
 
        Second commit
 
-       This is the description of the Second commit.
+       Description of the Second commit.
 
    commit b0137b3f775ea21303b3766282aa89e17134abd1
    Author: Kirater Dev <kirater@kiratech.it>
@@ -101,20 +102,20 @@ In this lab you will:
 
        First commit
 
-       This is the description of the First commit.
+       Description of the First commit.
    ```
 
 5. To create the `Fourth.txt` file use:
 
    ```console
-   ~/myrepo $ echo "Contents of the Fourth file." > Fourth.txt
+   $ echo "Contents of the Fourth file." > Fourth.txt
    (no output)
    ```
 
    And check its status, ending in adding it with `git add`:
 
    ```console
-   ~/myrepo $ git status
+   $ git status
    On branch main
 
    No commits yet
@@ -125,9 +126,9 @@ In this lab you will:
 
    nothing added to commit but untracked files present (use "git add" to track)
 
-   ~/myrepo $ git add Fourth.txt
+   $ git add Fourth.txt
 
-   ~/myrepo $ git status
+   $ git status
    On branch main
 
    No commits yet
@@ -140,9 +141,9 @@ In this lab you will:
    Now use `git reset` to move it out from the staged file list:
 
    ```console
-   ~/myrepo $ git reset Fourth.txt
+   $ git reset Fourth.txt
 
-   ~/myrepo $ git status
+   $ git status
    On branch main
 
    No commits yet
@@ -157,16 +158,16 @@ In this lab you will:
    Remove the file to cleanup:
 
    ```console
-   ~/myrepo $ rm -v Fourth.txt
+   $ rm -v Fourth.txt
    removed 'Fourth.txt'
    ```
 
 6. Modify `First.txt` and check diffs:
 
    ```console
-   ~/myrepo $ echo "My new content" > First.txt
+   $ echo "My new content" > First.txt
 
-   ~/myrepo $ git diff First.txt
+   $ git diff First.txt
    diff --git a/First.txt b/First.txt
    index 049230b..6d5e86c 100644
    --- a/First.txt
@@ -179,13 +180,13 @@ In this lab you will:
    Finally restore the file by using `git checkout`:
 
    ```console
-   ~/myrepo $ git checkout First.txt
+   $ git checkout First.txt
    Updated 1 path from the index
 
-   ~/myrepo $ git status
+   $ git status
    On branch main
    nothing to commit, working tree clean
 
-   ~/myrepo $ cat First.txt
+   $ cat First.txt
    Contents of the First file.
    ```

@@ -1,0 +1,71 @@
+# Helm chart for the Prometheus that will collect metrics from all the others
+prometheus:
+  prometheusSpec:
+    enableFeatures:
+      - exemplar-storage
+    additionalScrapeConfigs:
+      # This is used to scrape from the python exposed metrics
+      - job_name: 'python-app'
+        static_configs:
+          - targets:
+            - '172.18.0.1:5000'
+            - '172.18.0.1:5001'
+      # This is used to scrape from the otel-collector exposed metrics
+      - job_name: 'otel-collector'
+        static_configs:
+          - targets:
+            - otel-collector-opentelemetry-collector.otel-collector.svc.cluster.local:9090
+      # This is used to scrape from the federated Prometheus on the prod
+      # and test k8s clusters
+      - job_name: 'federate'
+        honor_labels: true
+        metrics_path: '/federate'
+        params:
+          'match[]':
+            - '{__name__!=""}'
+            # Metrics can be also selected specifically
+            #- '{__name__=~"node_.*"}'
+            #- '{__name__=~"kube_.*"}'
+            #- '{__name__=~"container_.*"}'
+            #- '{job="kubernetes-apiservers"}'
+            #- 'up'
+        static_configs:
+          - targets:
+            - 'prometheus-federate-kube-p-prometheus.prometheus-federate.svc.cluster.local:9090'
+            - '172.18.0.120:9090'
+            - '172.18.0.140:9090'
+
+# Disable all monitoring components
+grafana:
+  enabled: false
+alertmanager:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubelet:
+  enabled: false
+coreDns:
+  enabled: false
+nodeExporter:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeApiServer:
+  enabled: false
+kubeStateMetrics:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+# Disable auto service monitors and role creation
+prometheusOperator:
+  prometheusConfigReloader:
+    enableProbe: false
+  createCustomResource: false
+  admissionWebhooks:
+    enabled: false
+  cleanupCustomResource: false
+  rbac:
+    create: false
