@@ -1,25 +1,19 @@
-# AI Academy - Agents & RAG (Step 1)
+# 1) Ingest
+curl -X POST http://localhost:8000/rag/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"source_dir":"data/policies","reset":true}'
 
-Questo step crea l'app FastAPI con:
-- Endpoint `/rag/ingest` per indicizzare i documenti markdown in `data/policies/` (Chroma + sentence-transformers)
-- Endpoint `/rag/search` per recupero top-k (senza generazione LLM)
+# 2) Search
+curl -s http://localhost:8000/rag/search \
+  -H "Content-Type: application/json" \
+  -d '{"query":"delayed delivery refund","k":3}' | jq
 
-## Setup
-```bash
-cd ai-academy-agents-rag
-python -m venv .venv && source .venv/bin/activate   # oppure conda/mamba
-pip install -r requirements.txt
-cp .env.example .env
-uvicorn src.lab_service.app:app --reload
-```
+# 3) RAG answer with citations
+curl -s http://localhost:8000/rag/query \
+  -H "Content-Type: application/json" \
+  -d '{"question":"My package arrived 5 days late. Do I get a refund or a voucher?"}' | jq
 
-## Prova
-1) Ingestione
-```bash
-curl -X POST http://localhost:8000/rag/ingest -H "Content-Type: application/json" -d '{"reset": true}'
-```
-
-2) Ricerca
-```bash
-curl -s http://localhost:8000/rag/search -H "Content-Type: application/json"   -d '{"query":"ritardo spedizione rimborso", "k": 3}' | jq
-```
+# 4) Agent (LangGraph)
+curl -s http://localhost:8000/agent/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"My package is 5 days late. If policy requires, open a ticket.","thread_id":"class-session"}' | jq
