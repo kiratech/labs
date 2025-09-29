@@ -14,7 +14,7 @@ exposing these ports (Host/Container):
 $ cd && docker run --detach \
   --name sonarqube \
   --publish 9000:9000 \
-  sonarqube:lts
+  sonarqube:25.9.0.112764-community
 ```
 
 Check the progresses, until the web interface comes up:
@@ -104,7 +104,7 @@ To ssh://172.16.99.1:2222/devsecops/myproject.git
 And then follow the progress from the GitLab interface, under the CI
 pipelines a new stage should be visible:
 
-![DevSecOps-Pipeline-Sonarqube-GitLab-CI.png](images/DevSecOps-Pipeline-Sonarqube-GitLab-CI.png)
+![DevSecOps-Pipeline-GitLab-Sonarqube-CI.png](images/DevSecOps-Pipeline-GitLab-Sonarqube-CI.png)
 
 The project `myproject` will now be visible also in the Sonarqube web
 interface.
