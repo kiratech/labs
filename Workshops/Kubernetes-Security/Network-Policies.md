@@ -144,7 +144,43 @@ $ kubectl -n external exec -it $EXTERNALPOD -- curl -s --connect-timeout 5 $BACK
 UNREACHABLE
 ```
 
-## Working with exposed services
+## Testing everything
 
-TBD: this will be a deep dive on the exposition of the service, so it will
-include MetalLB.
+The script `stage-1-network-policies-namespaces.sh` will make it possible to
+test, check and clean the described configuration, as follows:
+
+```console
+$ ./stage-1-network-policies-namespaces.sh
+namespace/backend created
+namespace/frontend created
+namespace/external created
+deployment.apps/backend created
+pod/backend-86565945bf-lmzgn condition met
+pod/frontend created
+pod/external created
+Before NetworkPolicy (frontend): REACHABLE
+Before NetworkPolicy (external): REACHABLE
+namespace/frontend labeled
+namespace/backend labeled
+namespace/external labeled
+networkpolicy.networking.k8s.io/deny-all-except-frontend created
+After NetworkPolicy (frontend): REACHABLE
+After NetworkPolicy (external): UNREACHABLE
+```
+
+The output demonstrates that **before** applying the Network Policies all the
+communications between `frontend`, `external` and `backend` are allowed, and
+right after, just `frontend` is able to contact `backend`.
+
+Note that to make this work **namespaces must be labeled**.
+
+All the resources can be queried, and when you're done everything can be cleaned
+with:
+
+```console
+$ ./stage-1-network-policies-namespaces.sh clean
+Cleaning up things...
+namespace "backend" deleted
+namespace "frontend" deleted
+namespace "external" deleted
+```
