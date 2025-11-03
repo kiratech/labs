@@ -1,29 +1,71 @@
+"""FastAPI router exposing simple RAG endpoints: ingest, retrieve and generate.
+
+This module provides thin HTTP adapters over the rag_core utilities. Keep
+business logic in rag_core; these endpoints are responsible for request
+validation (Pydantic models) and for returning well-typed responses.
+
+Endpoints
+- POST /rag/ingest   -> trigger (re)ingestion of KB files
+- POST /rag/retrieve -> run semantic search against the KB
+- POST /rag/generate  -> run RAG generation using top-k retrieved chunks
+"""
 from fastapi import APIRouter
-from pydantic import BaseModel
-from .rag_core import build_index, retrieve, answer_with_citations, RAGResponse
+from .models import IngestReq, SearchReq, QueryReq
+from .rag_core import ingest, retrieve, generate, RAGResponse
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
-class IngestReq(BaseModel):
-    source_dir: str | None = None
-    reset: bool = False
-
 @router.post("/ingest")
-def ingest(req: IngestReq):
-    return build_index(req.source_dir, req.reset)
+def ingest_api(req: IngestReq):
+    """Trigger ingestion of markdown/plain-text files into the vector store.
 
-class SearchReq(BaseModel):
-    query: str
-    k: int = 4
+    Parameters
+    ----------
+    req : IngestReq
+        - source_dir: optional path to scan (defaults to configured KB_DIR)
+        - reset: if True, clear existing collection before ingesting
 
-@router.post("/search")
-def search(req: SearchReq):
+    Returns
+    -------
+    dict
+        Summary containing indexed_files and chunks added.
+    """
+    # Thin adapter: delegate to rag_core.ingest which handles file IO and persistence.
+    return ingest(req.source_dir, req.reset)
+
+@router.post("/retrieve")
+def retrieve_api(req: SearchReq):
+    """Run a semantic retrieval against the policies collection.
+
+    Parameters
+    ----------
+    req : SearchReq
+        - query: query text
+        - k: number of top results to return
+
+    Returns
+    -------
+    dict
+        Echoes the query and returns the list of retrieval hits under "results".
+        Each result includes text, snippet, meta and score.
+    """
     return {"query": req.query, "results": retrieve(req.query, k=req.k)}
 
-class QueryReq(BaseModel):
-    question: str
-    k: int = 4
+@router.post("/generate", response_model=RAGResponse)
+def generate_api(req: QueryReq):
+    """Produce a RAG answer using top-k retrieved context.
 
-@router.post("/query", response_model=RAGResponse)
-def query(req: QueryReq):
-    return answer_with_citations(req.question, k=req.k)
+    Parameters
+    ----------
+    req : QueryReq
+        - question: user question
+        - k: number of retrieved chunks to pass to the model
+
+    Returns
+    -------
+    RAGResponse
+        Structured response with 'answer' and 'citations'.
+    """
+    # Delegate to rag_core.generate which performs retrieval, calls the model,
+    # and formats the RAGResponse. Any HF/IO errors propagate as HTTP 500.
+    return generate(req.question, k=req.k)
