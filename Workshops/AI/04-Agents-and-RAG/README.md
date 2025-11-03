@@ -25,53 +25,42 @@ You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated 
 | [**Sentence Transformers**](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)           | Text embeddings for semantic search                 | `EMB_MODEL` in `.env`                     | `EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2`     |                |
 | [**Hugging Face Inference**](https://huggingface.co/openai/gpt-oss-20b) | Hosted LLM with OpenAI-compatible API               | `HF_MODEL_ID` in `.env`                   | `HF_MODEL_ID=openai/gpt-oss-20b`          |                |
 | [**LangSmith**](https://docs.langchain.com/)          | Tracing, run trees, tool I/O, comparisons           | Project/tags via env                      | `LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY=...`      |                |
-| **[curl](https://curl.se/) / [jq](https://jqlang.org/)**                       | Repeatable test suite & quick diffs                 | cURL snippets in README                   | `curl ...                                              | jq`            |
+| **[curl](https://curl.se/) / [jq](https://jqlang.org/)**                       | Repeatable test suite & quick diffs                 | cURL snippets in README                   | `curl ... \| jq`            |
 
 ---
 
 ### 1.2 Sentence Transformers (Embeddings)
 
+In any RAG pipeline, semantic understanding starts from good embeddings. Sentence Transformers provide pre-trained models that map text into high-dimensional vectors capturing meaning rather than exact words. This enables semantic similarity search, where “voucher limit” and “compensation cap” become close neighbors in vector space, making retrieval far more robust than keyword search.
+
 * **Role:** Encode chunks and queries for similarity search.
-* **Config:** `.env -> EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2`
-* **Notes:** Keep chunk size/overlap reasonable (e.g., 1200/200); adjust `k` (8–12).
-* **Docs:** **(add link)**
+* **Config:** `.env: EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2`
 
 ### 1.3 Chroma (Vector Store)
 
+Once texts are embedded, they need a persistent home, a place where vectors can be efficiently stored and retrieved. Chroma serves as this lightweight vector database, ideal for local labs or prototypes. It supports fast similarity queries and easy integration with LangChain, making it a natural choice for experimenting with multiple knowledge bases ("good" vs "bad" policies).
+
 * **Role:** Persisted embeddings for semantic retrieval (per-KB isolation).
-* **Touchpoints:** `rag_core.py` (`ingest`, `retrieve`), `PERSIST_DIR` in `.env`.
-* **Ops:**
+* **Config:** `.env: PERSIST_DIR=data/policies`
 
-  ```bash
-  curl -s -X POST :8000/rag/ingest -H "Content-Type: application/json" \
-    -d '{"source_dir":"data/policies","reset":true}'
-  ```
-* **Notes:** Use a **different** `PERSIST_DIR` per KB (`chroma_policies`, `chroma_bad`) to avoid cross-contamination.
-* **Docs:** **(add link)**
+### 1.4 Hugging Face Inference Router (LLM)
 
-### 1.3 Hugging Face Inference Router (LLM)
+The brain of our system remains a Large Language Model. Using Hugging Face Inference endpoints provides a cloud-hosted, OpenAI-compatible way to run open-source models with predictable latency and cost. This abstraction lets you switch between providers (e.g., Mistral, Phi-3, Qwen) while maintaining the same API shape for your tools and prompts.
 
 * **Role:** Hosted LLM with OpenAI-compatible endpoint; stable tool-calling support (provider-agnostic).
-* **Config:** `.env -> HF_MODEL_ID=...`, token in `HUGGINGFACEHUB_API_TOKEN`.
-* **Notes:** Prefer compact instruct models for latency (e.g., Phi-3.5, Qwen2.5-7B-Instruct).
-* **Docs:** **(add link)**
+* **Config:** `.env: HF_MODEL_ID=openai/gpt-oss-20b`, token in `HUGGINGFACEHUB_API_TOKEN`.
 
-### 1.4 LangChain (Models & Tools)
+### 1.5 LangChain (Models & Tools)
 
-* **Role:** Uniform chat model abstraction; declarative tool definitions.
-* **Touchpoints:** Tool functions in `agent_graph.py` (`@tool`), model wrapper setup.
-* **Key pattern:**
+LangChain acts as the glue layer between models and logic. It standardizes chat interfaces, message formats, and tool bindings, so your LLM can "call" functions in a structured way. Think of it as the framework that turns a passive model into an interactive assistant capable of invoking tools, parsing arguments, and reasoning over results.
 
-  ```python
-  chat_model = ChatOpenAI(...).bind_tools(TOOLS)   # or ChatHuggingFace(...).bind_tools(TOOLS)
-  ```
-* **Notes:** Ensure tool names/args match what the model will emit.
-* **Docs:** **(add link)**
+* **Role:** Uniform chat model abstraction and declarative tool definitions.
 
-### 1.5 LangGraph (Agent Orchestration)
+### 1.6 LangGraph (Agent Orchestration)
+
+LangGraph builds on LangChain but introduces explicit orchestration: instead of a simple loop, it defines a graph-based control flow between the LLM and its tools. Each node represents a reasoning or action step, and edges define transitions based on outcomes. This deterministic structure ensures reproducibility, prevents runaway loops, and gives you full visibility into how your agent reasons and acts.
 
 * **Role:** State machine controlling LLM ↔ Tools turns; prevents “runaway” behaviors.
-* **Touchpoints:** `agent_graph.py` (`StateGraph`, `ToolNode`, conditional edges, `MemorySaver`).
 * **Key pattern:**
 
   ```python
@@ -82,26 +71,67 @@ You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated 
   graph.add_edge("tools", "agent")
   agent_graph = graph.compile(checkpointer=MemorySaver())
   ```
-* **Notes:** Add a `recursion_limit` in `.invoke(...)` to avoid loops.
-* **Docs:** **(add link)**
+
+#### 1.6.1 Reasoning Strategies: ReAct and Plan-and-Execute Agents
+
+Modern LLM agents do not simply call tools on demand: they reason, plan, and act. Two common reasoning strategies used in agent design are ReAct and Plan-and-Execute.
+
+**ReAct (Reason + Act)**: This approach interleaves reasoning steps (“thoughts”) and actions in a single loop. The model reflects on the problem, chooses a tool to call, observes the result, and continues reasoning based on new information.
+
+```txt
+Example:
+
+The user asks, “Am I eligible for a refund?”
+
+The model reasons: “I should check the refund policy first.”
+
+Calls the search_policies tool to find relevant clauses.
+
+Reads the results and reasons again: “SLA-214 confirms refund allowed.”
+
+Produces the final answer, citing the relevant policy.
+```
+
+This strategy is flexible and transparent. Each reasoning and action step can be traced in LangSmith.
+
+**Plan-and-Execute**: In this strategy, the model separates planning from execution. It first generates a structured plan describing the steps to solve the task, then executes those steps sequentially.
+
+```txt
+Example:
+
+The model plans:
+
+Search for relevant policy rules
+
+Compute applicable refund or voucher
+
+Open a ticket with the result
+
+The agent executes each step using the corresponding tools (search_policies, calc, create_ticket).
+```
+
+Plan-and-Execute is ideal for workflows that follow a predictable structure, while ReAct is better for adaptive reasoning or exploratory tasks.
+LangGraph can support both patterns, providing deterministic control over the reasoning loop.
 
 ### 1.6 LangSmith (Observability)
 
-* **Role:** Trace every call: prompts, tool I/O, graph edges, timings; compare runs (“good” vs “bad” KB).
+Complex agents quickly become black boxes without proper observability. LangSmith acts as the “flight recorder” of your LLM workflows, logging every prompt, response, tool call, and intermediate state. This lets you replay runs, compare versions, and debug behaviors—vital when proving that differences come from the knowledge base, not random model noise.
+
+* **Role:** Trace every call: prompts, tool I/O, graph edges, timings; compare runs ("good" vs "bad" KB).
 * **Config:**
 
   ```bash
   export LANGSMITH_TRACING=true
   export LANGSMITH_API_KEY=***
-  export LANGSMITH_PROJECT=agents-and-rag-lab
-  export LANGSMITH_RUN_TAGS=local,lab4
+  export LANGSMITH_PROJECT=ai-academy
+  export LANGSMITH_RUN_TAGS=ai-academy
   ```
-* **What to inspect:** run tree, retrieved chunks, tool sequences, errors; compare two runs side-by-side.
-* **Docs:** **(add link)**
 
 ---
 
 ## 2. Architecture Overview
+
+The architecture consists of four main interaction flows, each representing a key layer of the system, from the client request to end-to-end observability.
 
 ```mermaid
 flowchart LR
@@ -180,21 +210,58 @@ flowchart LR
   A -->|HTTP 200 JSON| C
 ```
 
-**High-level flows**
+### 2.1 Client -> FastAPI Service
 
-1. Client calls FastAPI (`/rag/query` or `/agent/ask`).
-2. **RAG**: queries Chroma (embeddings: `sentence-transformers/...`) and returns relevant policy chunks + metadata (file, chunk, policy IDs).
-3. **Agent (LangGraph)**: model **bound to tools** decides when to:
+Everything begins with a client request. Through the frontend, command line, or automated test, it is sent to the FastAPI service.
+The service exposes two main groups of endpoints:
 
-   * call `search_policies` to retrieve evidence,
-   * call `calc` math on refunds/vouchers/caps,
-   * call `create_ticket` persist ticket with ID + local file.
+- `/rag/*` routes for retrieval-augmented generation, such as `/rag/ingest`, `/rag/search`, and `/rag/query`.
+- `/agent/ask` route for agentic reasoning and tool use.
 
-4. **LangSmith** traces every step: prompts, tool I/O, graph edges.
+FastAPI acts as the entrypoint and router, validating payloads via Pydantic models and dispatching each request to the proper internal controller.
+This layer isolates client interaction from the logic of embeddings, vector stores, and model orchestration.
+
+### 2.2 Retrieval-Augmented Generation (RAG) Flow
+
+Once a /rag/* request arrives, the system executes the retrieval pipeline:
+
+- Ingestion phase (/rag/ingest): the documents from the knowledge base (KB) are chunked and transformed into embeddings using Sentence Transformers.
+- Storage phase: those vectors are persisted in Chroma, a local vector store, ensuring fast and repeatable semantic queries.
+- Query phase (/rag/query): when a user question arrives, the text is embedded and matched against the stored vectors to retrieve the most relevant chunks.
+- Answer generation: the retrieved context is then passed to the LLM (via the Hugging Face Inference endpoint), which produces a grounded answer with citations to specific policy documents.
+
+This flow ensures factual, source-based answers rather than hallucinated ones. Each RAG run can be traced later in LangSmith for inspection.
+
+### 2.3. Agent Flow (LangGraph Orchestration)
+
+When the /agent/ask endpoint is called, the request is routed to a LangGraph Agent, which combines reasoning and action:
+- The model receives the user query and decides whether to call one or more tools, such as:
+  
+  - search_policies to retrieve evidence from the vector database,
+  - calc to compute compensations or voucher caps,
+  - create_ticket to open and persist a JSON ticket in the tickets/ directory.
+
+- The LangGraph state machine guarantees that the reasoning loop between model and tools is controlled and deterministic, avoiding infinite recursion.
+- The agent then synthesizes a final response that includes results, citations, and any generated artifacts (e.g., ticket IDs).
+
+This flow represents true agentic reasoning, where the LLM does not only "respond" but decides and acts through tools.
+
+### 2.4. LangSmith Observability & Tracing
+
+All executions, RAG or Agent, are continuously observed via LangSmith.
+Every prompt, tool invocation, and intermediate output is logged as part of a run tree.
+This enables:
+- Step-by-step replay of agent decisions.
+- Comparison of behaviors when using different knowledge bases (“good” vs “bad” policies).
+- Root-cause analysis when responses differ or fail.
+
+LangSmith effectively transforms the system into a transparent and auditable workflow, where each reasoning path and retrieved chunk can be inspected.
 
 ---
 
 ## 3. Repository Layout
+
+The repository is structured as follows:
 
 ```
 src/lab_service/
@@ -213,6 +280,8 @@ artifacts/chroma_*     # Chroma persist directories per KB
 
 ## 4. Prerequisites
 
+This lab assumes that Python is already installed, the repository kiratech/labs is accessible, and Git is properly configured on your local machine. 
+
 * Python **3.12+** 
 * **HuggingFace** account & API key
 * `curl` and `jq`
@@ -221,8 +290,7 @@ artifacts/chroma_*     # Chroma persist directories per KB
 ---
 
 ## 5. Environment Setup
-
-This lab assumes that Python is already installed, the repository kiratech/labs is accessible, and Git is properly configured on your local machine.  
+ 
 As in the previous lab, in order to execute this laboratory, you will be asked to install a set of tools common in Agent engineering field.
 
 ### 5.1 Create a virtual environment
@@ -264,75 +332,11 @@ curl -X 'GET' \
 
 ---
 
-## 6. Concepts in Practice
+## 6. Step-by-Step: Running RAG
 
-### 6.1 RAG (Retrieval-Augmented Generation)
+This section walks through the RAG flow end-to-end, explaining each `curl` flag, the request/response schema, and what you should see in the service and in LangSmith traces. Endpoints are served by the FastAPI app running on `http://localhost:8000`. 
 
-* **Chunking:** split Markdown policies into manageable pieces.
-* **Embeddings:** encode chunks with `EMB_MODEL` into vectors.
-* **Vector store:** persist in **Chroma** (`PERSIST_DIR`) for fast similarity search.
-* **Citations:** return `source`, `chunk`, and **policy IDs** (e.g., `[SLA-214]`) so answers are **verifiable**.
-
-**Operations**
-
-* **Ingest:** parse & embed files into Chroma.
-* **Search:** return top-k similar chunks for a query.
-* **Query:** prompt LLM with retrieved evidence to produce a grounded answer.
-
-> Where to look in code: `rag_core.py` (ingest/retrieve/answer).
-> Add doc link: **(add link to your RAG design doc)**
-
----
-
-### 6.2 LangGraph Agent
-
-* **StateGraph:** keeps the message state (`messages`) and routes between nodes.
-* **Tool binding:** model is `.bind_tools(TOOLS)` so it can **emit tool calls**.
-* **Loop:** `agent -> tools -> agent` until no more tool calls.
-* **System prompt:** instructs *when* to use tools (retrieve first for policy questions, compute amounts, escalate only if TCK conditions apply).
-
-**Tools implemented**
-
-* `search_policies(query:str) -> JSON[{source,chunk,ids,excerpt}]`
-
-  * Uses RAG retrieval; **extracts policy IDs** with a regex for reliable citations.
-* `calc(expr:str) -> number`
-
-  * For restocking, vouchers, and **cap checks** (`min(base_amount, cap)` logic—either here or done by separate helper).
-* `create_ticket(category: "logistics"|"returns", reason:str)`
-
-  * Generates a **deterministic ticket_id**, writes a file under `tickets/`, returns JSON payload.
-
-> Where to look in code: `agent_graph.py` (graph wiring, tools, routing).
-> Add doc link (LangGraph intro): **(add link)**
-
----
-
-### 6.3 LangSmith Observability
-
-* **Enable with env vars** (already in `.env`).
-* Every call to `/rag/*` and `/agent/ask` will appear as **runs**.
-* Inspect:
-
-  * Prompts & variables at each step,
-  * Tool call I/O,
-  * Graph edges & timing,
-  * Errors and retries.
-
-**Operations**
-
-* **Filter by project and tags**.
-* **Compare runs** (e.g., with “good” vs “bad” policies).
-* **Share traces** with teammates.
-
-> Where to click: LangSmith dashboard — **(add your workspace link)**
-> Add “How to interpret a run tree” cheatsheet — **(add link)**
-
----
-
-## 7. Step-by-Step: Running RAG
-
-### 7.1 Ingest the KB
+### 6.1 Ingest the Knowledge Base
 
 ```bash
 curl -s -X POST http://localhost:8000/rag/ingest \
@@ -340,13 +344,28 @@ curl -s -X POST http://localhost:8000/rag/ingest \
   -d '{"source_dir":"data/policies","reset":true}'
 ```
 
-**What happens**
+**What the command does**
 
-* Documents are loaded from `KB_DIR`.
-* Chunks are embedded with `EMB_MODEL`.
-* Vectors are saved to `PERSIST_DIR` (Chroma).
+* `-s`: silent mode (keeps the output clean).
+* `-X POST`: calls the ingestion endpoint with an HTTP POST.
+* `-H "Content-Type: application/json"`: tells the API we are sending JSON.
+* `-d '{...}'`: JSON body:
 
-### 7.2 Explore search results
+  * `source_dir`: path to the KB to ingest (e.g., `data/policies`).
+  * `reset`: if `true`, clears the existing Chroma collection before re-ingesting.
+
+**Expected response (shape)**
+
+```json
+{
+  "indexed_files": 7,
+  "chunks": 9
+}
+```
+
+You should also see the persist directory updated under your Chroma path. If `chunks` is `0` or the call fails, check that `source_dir` exists and that `.env` contains valid embedding model settings. 
+
+### 6.2 Explore search results
 
 ```bash
 curl -s -X POST http://localhost:8000/rag/search \
@@ -354,29 +373,91 @@ curl -s -X POST http://localhost:8000/rag/search \
   -d '{"query":"voucher cap consumer","k":8}' | jq
 ```
 
-**What to check**
+**What the command does**
 
-* Each hit includes `source`, `chunk`, `excerpt`, and `ids` (e.g., `[SLA-214]`).
-* If empty or irrelevant: verify `KB_DIR`, refresh embeddings, adjust `k`.
+* Sends a semantic search query (`query`) against the ingested KB.
+* `k`: number of top results to return.
+* Piped into `jq` for pretty-printing.
 
-### 7.3 Ask with citations (RAG only)
+**Expected response (shape)**
+
+```json
+{
+  "query": "voucher cap consumer",
+  "results": [
+    {
+      "text": "# Shipping & SLA (SLA-200) — ...",
+      "snippet": "# Shipping & SLA (SLA-200) — ... (shorter)",
+      "meta": {
+        "chunk": 0,
+        "source": "data/policies/20_shipping_sla.md"
+      },
+      "score": 0.6256221532821655
+    },
+    {
+      "text": "013] Escalations (tickets) must follow **TCK-5xx**. ...",
+      "snippet": "013] Escalations (tickets) must follow **TCK-5xx**. ... (shorter)",
+      "meta": {
+        "chunk": 1,
+        "source": "data/policies/00_index.md"
+      },
+      "score": 0.7009620070457458
+    },
+    {
+      ...
+    },
+    {
+      ...
+    }
+  ]
+}
+```
+
+You should recognize policy IDs in `source`/`metadata` (e.g., `SLA-214`). If results look irrelevant or empty, re-check embeddings, re-ingest with `reset:true`, or adjust `k`. 
+
+### 6.3 Ask with citations (RAG only)
 
 ```bash
 curl -s -X POST http://localhost:8000/rag/query \
   -H "Content-Type: application/json" \
-  -d '{"question":"What is the voucher cap for late deliveries and when does it apply?"}' | jq
+  -d '{
+    "question":"What is the voucher cap for late deliveries and when does it apply?"
+  }' | jq
 ```
 
-**Expected**
+**What the command does**
 
-* A short answer citing `[SLA-214]`.
-* See the run in **LangSmith** and inspect retrieved chunks.
+* Calls the RAG controller to:
+
+  1. embed the question,
+  2. retrieve the top chunks from Chroma,
+  3. pass the context to the LLM,
+  4. generate a grounded answer with citations.
+
+**Expected response (shape)**
+
+```json
+{
+  "answer": "The voucher cap for late deliveries is €5 per order. ...",
+  "citations": [
+    {
+      "source": "data/policies/20_shipping_sla.md",
+      "chunk": 0
+    }
+  ]
+}
+```
+
+If there are no citations, verify the KB and that your LLM endpoint is reachable/configured. 
 
 ---
 
-## 8. Step-by-Step: Running the Agent
+## 7. Step-by-Step: Running the Agent
 
-### 8.1 Basic “ticketing” scenario
+This section shows how the agent (LangGraph-orchestrated) plans, calls tools (`search_policies`, `calc`, `create_ticket`), and returns a final answer. Each example explains the request, the expected tool calls, and the typical JSON shape. 
+Keep **LangSmith** open, agent traces are particularly useful to inspect plan/act loops and tool I/O.
+
+### 7.1 Basic “ticketing” scenario
 
 ```bash
 curl -s -X POST http://localhost:8000/agent/ask \
@@ -384,17 +465,34 @@ curl -s -X POST http://localhost:8000/agent/ask \
   -d '{
     "question":"Delivery is 11 business days late. If policy requires, open a logistics ticket and summarize the compensation with sources.",
     "thread_id":"lab-01"
-  }' | jq -r '.final_answer'
+  }' | jq
 ```
 
-**What happens**
+**What the command does**
 
-* The model should call `search_policies` (find `[TCK-511]` and `[SLA-213][SLA-214]`).
-* If conditions met, it should call `create_ticket` and return a **real** `ticket_id`.
-* Check `tickets/` for a new file.
-* Open the **LangSmith** run: you’ll see both tool calls in the tree.
+* Sends a natural language task to the agent.
+* `thread_id` groups related turns/runs for easier tracing.
 
-### 8.2 "Calc + Cap" scenario
+**What should happen**
+
+* The model should **plan** to check policy, then **act**:
+
+  1. `search_policies` → find `[SLA-213][SLA-214]` and ticketing rule `[TCK-511]`.
+  2. If conditions met, **call** `create_ticket` and persist a JSON file under `tickets/`.
+* The agent synthesizes a **final_answer** with citations and a real `ticket_id`.
+
+**Expected response (shape)**
+
+```json
+{
+  "final_answer": "**Answer (Plan)**  \n1. Identify relevant policy clauses for a delivery 11 business days late.  \n2. Determine if a ticket must be opened...",
+  "thread_id": "lab-01"
+}
+```
+
+Check the `tickets/` directory for a new file named after `ticket_id`. In LangSmith, you should see the two tool calls in the run tree. If no ticket appears, inspect the tool call arguments and policy thresholds in the trace. 
+
+### 7.2 "Calc + Cap" scenario
 
 ```bash
 curl -s -X POST http://localhost:8000/agent/ask \
@@ -405,14 +503,27 @@ curl -s -X POST http://localhost:8000/agent/ask \
   }' | jq -r '.final_answer'
 ```
 
-**Expected**
+**What the command does**
 
-* Restocking: **10% = €120** `[RET-103]`.
-* Voucher: **20% = €240**, **capped at €50** `[SLA-212][SLA-214]`.
-* Net outcome clearly stated.
-* In LangSmith, confirm a `calc` call occurred.
+* Asks the agent to compute amounts per policy, respecting caps.
+* We extract only `.final_answer` for readability.
 
-### 8.3 Digital activation error scenario
+**What should happen**
+
+* Tool sequence typically includes:
+
+  1. `search_policies` → returns `[RET-103]` (restocking), `[SLA-212][SLA-214]` (voucher and cap).
+  2. `calc` → applies percentages and caps; returns a structured breakdown.
+
+**Expected calculation (example)**
+
+* Restocking: **10% of €1,200 = €120** (`[RET-103]`).
+* Voucher: **20% of €1,200 = €240**, **capped at €50** (`[SLA-212][SLA-214]`).
+* Net outcome clearly explained in the final answer with citations.
+
+If the cap isn’t applied, open the LangSmith run to confirm `calc` input/output and that the agent read the right clause. 
+
+### 7.3 Digital activation error scenario
 
 ```bash
 curl -s -X POST http://localhost:8000/agent/ask \
@@ -420,24 +531,28 @@ curl -s -X POST http://localhost:8000/agent/ask \
   -d '{
     "question":"Digital license shows a server-side activation error at day 5. If required, open a returns ticket and confirm refund eligibility with sources.",
     "thread_id":"lab-03"
-  }' | jq -r '.final_answer'
+  }' | jq
 ```
 
-**Expected**
+**What the command does**
 
-* Evidence: `[DIG-312]` (refund allowed), general rule `[DIG-311]`.
-* Ticket: `returns` via `[TCK-531]` when applicable.
-* See both tool calls in LangSmith.
+* Tests digital-goods rules and conditional ticket opening.
 
-> Tip: reuse the **10 test prompts** you prepared to cover `search_policies` -> `calc` -> `create_ticket` combinations.
+**What should happen**
+
+* Evidence from policies such as `[DIG-311]` (general) and `[DIG-312]` (refund allowed).
+* If policy requires it, `create_ticket` opens a **returns** ticket (e.g., `[TCK-531]`).
+* Final answer references both digital policy and ticketing rule, plus any amounts.
+
+If no ticket is created, confirm the agent’s branching logic in the LangGraph trace and that `[TCK-531]` conditions are actually met for your KB. 
 
 ---
 
-## 9. KB Swap: "Good" vs "Bad" Policies (RAG Contrast Demo)
+## 8. KB Swap: "Good" vs "Bad" Policies (RAG Contrast Demo)
 
-**Goal:** prove the system’s behavior depends on the KB (not hidden model bias).
+To demonstrate KB-driven behavior:
 
-### 9.1 Re-ingest:
+1. Re-ingest the **bad** policies:
 
 ```bash
 curl -s -X POST http://localhost:8000/rag/ingest \
@@ -445,8 +560,54 @@ curl -s -X POST http://localhost:8000/rag/ingest \
   -d '{"source_dir":"data/bad_policies","reset":true}'
 ```
 
-### 9.2 Re-run the **same** agent calls as above and compare:
+2. Re-run **exactly the same** agent calls as 7.1–7.3 and compare outcomes and citations. In LangSmith, you should see different retrieved passages, decisions, and amounts. 
 
-* Different **citations** (same IDs, harsher content).
-* Different **decisions** (smaller vouchers, stricter returns, fewer tickets).
-* In **LangSmith**, compare run trees side-by-side.
+## 9. RAG vs Agents: When and Why
+
+Although Retrieval-Augmented Generation (RAG) and Agents often coexist within the same system, they address different needs.
+
+### 9.1 RAG (Retrieval-Augmented Generation)
+
+RAG extends a language model’s knowledge by retrieving relevant information from external sources before generating an answer. It grounds the model’s output in verifiable, domain-specific data rather than relying on its static memory.
+
+Typical use cases:
+
+- Factual Q&A over internal policies or documentation
+- Summarization or comparison of company knowledge
+- Search and retrieval across unstructured text
+
+Example: A user asks, "What is the refund cap for late deliveries?" RAG retrieves the corresponding clause from the KB (e.g., [SLA-214]) and generates a grounded summary referencing that source.
+
+### 9.2 Agents with Integrated Tools
+
+Agents focus on reasoning and decision-making. They can call multiple tools to perform calculations, trigger actions, or make multi-step decisions.
+
+Typical use cases:
+
+- Task automation and workflow orchestration
+- Conditional logic and business rule enforcement
+- Multi-step decision flows requiring both reasoning and action
+
+Example: A user asks, "Delivery was 11 days late—if required, open a ticket and calculate compensation." The agent reasons about the conditions, uses RAG to fetch the policy, calls calc to compute the refund, and finally triggers create_ticket.
+
+## 10. Conclusions
+
+This lab marks the closing chapter of the AI Academy track, completing the journey from model foundations to production-grade applications.  
+In the previous sessions, we explored:
+
+- Lab 1: Model foundations and experiment tracking: introduced core ML concepts using MLflow to manage experiments, metrics, and artifacts, establishing reproducibility and version control as foundational practices.
+- Lab 2: Training pipelines with Prefect: focused on building and orchestrating modular training flows, turning ad-hoc scripts into traceable, automatable pipelines.
+- Lab 3: LoRA fine-tuning and prompt engineering: explored efficient model adaptation through LoRA and demonstrated how advanced prompting techniques can refine model behavior without retraining.
+- Lab 4 (this lab): Orchestration and reasoning: integrates all previous concepts by combining retrieval-augmented generation (RAG) and agent-based reasoning, creating systems that connect knowledge and action under full observability.
+
+Through this progression, we moved from understanding LLMs to engineering with LLMs.  
+Key takeaways from this final stage:
+
+- Grounding is essential: RAG transforms static models into domain-aware assistants by connecting them to your organization’s data.
+- Reasoning unlocks autonomy: agentic workflows powered by LangGraph and LangChain let models plan, decide, and act with explicit tool use.
+- Observability ensures trust: LangSmith provides the transparency needed to debug, compare, and validate complex AI behaviors.
+- Integration defines value: LLMs become business-ready when embedded within APIs, governance rules, and reproducible workflows.
+
+By completing this lab, you now have a full view of what it means to design, deploy, and monitor LLM-based systems that act responsibly and reliably.
+
+The next step is not another lab, it’s applying these patterns to real projects: turning proof-of-concepts into production-grade AI services, and continuously evolving them as the ecosystem grows.
