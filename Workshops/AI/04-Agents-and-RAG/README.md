@@ -1,14 +1,21 @@
 # Lab: Agents & RAG with LangChain, LangGraph & LangSmith
 
-In **Lab 3** we explored *prompt engineering patterns* and *LoRA fine-tuning* to steer and adapt LLMs. We learned that smarter prompts and light-weight fine-tuning improve response quality, but **they don’t give the model access to your private knowledge** nor the ability to **act**.
+## Overview
+
+In **Lab 3** we explored *prompt engineering patterns* and *LoRA fine-tuning* to steer and adapt LLMs. We learned that smarter prompts and light-weight fine-tuning improve response quality, but **they don't give the model access to your Knowledge** nor the ability to **act**.
 
 **Lab 4 connects the dots**:
 
-* We build a **RAG** (Retrieval-Augmented Generation) pipeline to ground answers in **our policy KB**.
+* We build a **RAG** (Retrieval-Augmented Generation) pipeline to ground answers in **our policy Knowledge Base (KB)**.
 * We wrap the LLM inside a **LangGraph agent** that can **use tools** (retrieve policies, compute amounts, open tickets).
-* We make executions **observable end-to-end** with **LangSmith** (mandatory): every run, step, prompt, and tool call is traceable.
+* We make executions **observable end-to-end** with **LangSmith**: every run, step, prompt, and tool call is traceable.
 
-You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated test suite, and demonstrate how **changing only the KB** (“good” vs “bad” policies) flips decisions.
+You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated test suite, and demonstrate how **changing only the KB** ("good" vs "bad" policies) flips decisions.
+
+## Context
+
+Imagine you're on the escalation desk of a e-commerce platform: every day you have to manage late deliveries, defective bundles, and digital activations that fail minutes before launch. Policies change weekly, refunds depend on caps buried in PDFs, and compliance demands you cite the exact clause before touching a customer's order.  
+This lab puts you in control of that chaos, building an agent that can surface the right policy on demand, compute the precise euro amount, and, when escalation is mandatory, open the ticket with the same discipline a seasoned specialist would.
 
 ---
 
@@ -16,11 +23,11 @@ You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated 
 
 ### 1.1 Tools, concepts and our usage
 
-| Tool                                | Why we use it                                       | What you’ll touch                         | Key commands / env                                     |                |
-| ----------------------------------- | --------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ | -------------- |
+| Tool                                | Why we use it                                       | What you'll touch                         | Key commands / env                                     |
+| ----------------------------------- | --------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
 | [**FastAPI**](https://fastapi.tiangolo.com/)                        | Expose RAG & Agent endpoints as HTTP APIs           | `src/lab_service/app.py`, Pydantic models | `uvicorn src.lab_service.app:app --reload`|                |
 | [**LangChain** ](https://docs.langchain.com/oss/python/langchain/overview)                 | Model wrappers, message schema, tool binding        | `Chat*` wrapper, `@tool` functions        | `chat_model = ... .bind_tools(TOOLS)`                  |                |
-| [**LangGraph**](https://docs.langchain.com/oss/python/langgraph/overview)                       | Deterministic agent control flow (LLM ↔ Tools loop) | `StateGraph`, `ToolNode`, `MemorySaver`   | Graph build in `agent_graph.py`                        |                |
+| [**LangGraph**](https://docs.langchain.com/oss/python/langgraph/overview)                       | Deterministic agent control flow (LLM <-> Tools loop) | `StateGraph`, `ToolNode`, `MemorySaver`   | Graph build in `agent_graph.py`                        |                |
 | [**Chromadb**](https://docs.trychroma.com/docs/overview/introduction)                          | Persisted vector store for policy KB                | ingest/retrieve in `rag_core.py`          | `PERSIST_DIR=artifacts/chroma_*`                       |                |
 | [**Sentence Transformers**](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2)           | Text embeddings for semantic search                 | `EMB_MODEL` in `.env`                     | `EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2`     |                |
 | [**Hugging Face Inference**](https://huggingface.co/openai/gpt-oss-20b) | Hosted LLM with OpenAI-compatible API               | `HF_MODEL_ID` in `.env`                   | `HF_MODEL_ID=openai/gpt-oss-20b`          |                |
@@ -31,7 +38,7 @@ You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated 
 
 ### 1.2 Sentence Transformers (Embeddings)
 
-In any RAG pipeline, semantic understanding starts from good embeddings. Sentence Transformers provide pre-trained models that map text into high-dimensional vectors capturing meaning rather than exact words. This enables semantic similarity search, where “voucher limit” and “compensation cap” become close neighbors in vector space, making retrieval far more robust than keyword search.
+In any RAG pipeline, semantic understanding starts from good embeddings. Sentence Transformers provide pre-trained models that map text into high-dimensional vectors capturing meaning rather than exact words. This enables semantic similarity search, where "voucher limit" and "compensation cap" become close neighbors in vector space, making retrieval far more robust than keyword search.
 
 * **Role:** Encode chunks and queries for similarity search.
 * **Config:** `.env: EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2`
@@ -40,7 +47,7 @@ In any RAG pipeline, semantic understanding starts from good embeddings. Sentenc
 
 Once texts are embedded, they need a persistent home, a place where vectors can be efficiently stored and retrieved. Chroma serves as this lightweight vector database, ideal for local labs or prototypes. It supports fast similarity queries and easy integration with LangChain, making it a natural choice for experimenting with multiple knowledge bases ("good" vs "bad" policies).
 
-* **Role:** Persisted embeddings for semantic retrieval (per-KB isolation).
+* **Role:** Persisted embeddings for semantic retrieval.
 * **Config:** `.env: PERSIST_DIR=data/policies`
 
 ### 1.4 Hugging Face Inference Router (LLM)
@@ -60,7 +67,7 @@ LangChain acts as the glue layer between models and logic. It standardizes chat 
 
 LangGraph builds on LangChain but introduces explicit orchestration: instead of a simple loop, it defines a graph-based control flow between the LLM and its tools. Each node represents a reasoning or action step, and edges define transitions based on outcomes. This deterministic structure ensures reproducibility, prevents runaway loops, and gives you full visibility into how your agent reasons and acts.
 
-* **Role:** State machine controlling LLM ↔ Tools turns; prevents “runaway” behaviors.
+* **Role:** State machine controlling LLM <-> Tools turns; prevents "runaway" behaviors.
 * **Key pattern:**
 
   ```python
@@ -76,18 +83,18 @@ LangGraph builds on LangChain but introduces explicit orchestration: instead of 
 
 Modern LLM agents do not simply call tools on demand: they reason, plan, and act. Two common reasoning strategies used in agent design are ReAct and Plan-and-Execute.
 
-**ReAct (Reason + Act)**: This approach interleaves reasoning steps (“thoughts”) and actions in a single loop. The model reflects on the problem, chooses a tool to call, observes the result, and continues reasoning based on new information.
+**ReAct (Reason + Act)**: This approach interleaves reasoning steps ("thoughts") and actions in a single loop. The model reflects on the problem, chooses a tool to call, observes the result, and continues reasoning based on new information.
 
 ```txt
 Example:
 
-The user asks, “Am I eligible for a refund?”
+The user asks, "Am I eligible for a refund?"
 
-The model reasons: “I should check the refund policy first.”
+The model reasons: "I should check the refund policy first."
 
 Calls the search_policies tool to find relevant clauses.
 
-Reads the results and reasons again: “SLA-214 confirms refund allowed.”
+Reads the results and reasons again: "SLA-214 confirms refund allowed."
 
 Produces the final answer, citing the relevant policy.
 ```
@@ -115,7 +122,7 @@ LangGraph can support both patterns, providing deterministic control over the re
 
 ### 1.6 LangSmith (Observability)
 
-Complex agents quickly become black boxes without proper observability. LangSmith acts as the “flight recorder” of your LLM workflows, logging every prompt, response, tool call, and intermediate state. This lets you replay runs, compare versions, and debug behaviors—vital when proving that differences come from the knowledge base, not random model noise.
+Complex agents quickly become black boxes without proper observability. LangSmith acts as the "flight recorder" of your LLM workflows, logging every prompt, response, tool call, and intermediate state. This lets you replay runs, compare versions, and debug behaviors-vital when proving that differences come from the knowledge base, not random model noise.
 
 * **Role:** Trace every call: prompts, tool I/O, graph edges, timings; compare runs ("good" vs "bad" KB).
 * **Config:**
@@ -153,18 +160,18 @@ flowchart LR
     RG1[Ingest: /rag/ingest -> chunk and embed]
     RG2[Embeddings: sentence-transformers]
     RG3[Chroma Vector DB PERSIST_DIR]
-    RS1[Search: /rag/search -> top-k]
-    RQ1[RAG LLM: /rag/query -> answer and citations]
+    RS1[Search: /rag/retrieve -> top-k]
+    RQ1[RAG LLM: /rag/generate -> answer and citations]
   end
 
   A -->|/rag/ingest| R0
   R0 --> RG1 --> RG2 --> RG3
 
-  A -->|/rag/search| RS1
+  A -->|/rag/retrieve| RS1
   RS1 --> RG3
   RS1 --> RQ1
 
-  A -->|/rag/query| RQ1
+  A -->|/rag/generate| RQ1
 
   %% KBs
   K1[KB Good Policies data/policies]
@@ -215,7 +222,7 @@ flowchart LR
 Everything begins with a client request. Through the frontend, command line, or automated test, it is sent to the FastAPI service.
 The service exposes two main groups of endpoints:
 
-- `/rag/*` routes for retrieval-augmented generation, such as `/rag/ingest`, `/rag/search`, and `/rag/query`.
+- `/rag/*` routes for retrieval-augmented generation, such as `/rag/ingest`, `/rag/retrieve`, and `/rag/generate`.
 - `/agent/ask` route for agentic reasoning and tool use.
 
 FastAPI acts as the entrypoint and router, validating payloads via Pydantic models and dispatching each request to the proper internal controller.
@@ -227,7 +234,7 @@ Once a /rag/* request arrives, the system executes the retrieval pipeline:
 
 - Ingestion phase (/rag/ingest): the documents from the knowledge base (KB) are chunked and transformed into embeddings using Sentence Transformers.
 - Storage phase: those vectors are persisted in Chroma, a local vector store, ensuring fast and repeatable semantic queries.
-- Query phase (/rag/query): when a user question arrives, the text is embedded and matched against the stored vectors to retrieve the most relevant chunks.
+- Query phase (/rag/generate): when a user question arrives, the text is embedded and matched against the stored vectors to retrieve the most relevant chunks.
 - Answer generation: the retrieved context is then passed to the LLM (via the Hugging Face Inference endpoint), which produces a grounded answer with citations to specific policy documents.
 
 This flow ensures factual, source-based answers rather than hallucinated ones. Each RAG run can be traced later in LangSmith for inspection.
@@ -252,7 +259,7 @@ All executions, RAG or Agent, are continuously observed via LangSmith.
 Every prompt, tool invocation, and intermediate output is logged as part of a run tree.
 This enables:
 - Step-by-step replay of agent decisions.
-- Comparison of behaviors when using different knowledge bases (“good” vs “bad” policies).
+- Comparison of behaviors when using different knowledge bases ("good" vs "bad" policies).
 - Root-cause analysis when responses differ or fail.
 
 LangSmith effectively transforms the system into a transparent and auditable workflow, where each reasoning path and retrieved chunk can be inspected.
@@ -283,9 +290,9 @@ artifacts/chroma_*     # Chroma persist directories per KB
 This lab assumes that Python is already installed, the repository kiratech/labs is accessible, and Git is properly configured on your local machine. 
 
 * Python **3.12+** 
-* **HuggingFace** account & API key
+* [**HuggingFace**](https://huggingface.co/) account & API key. Once logged in, create an access token with `read` permissions from https://huggingface.co/settings/tokens.
 * `curl` and `jq`
-* **LangSmith** account & API key
+* [**LangSmith**](https://smith.langchain.com/) account & API key. Once logged in, create an access token in your `settings/API key` section.
 
 ---
 
@@ -293,7 +300,33 @@ This lab assumes that Python is already installed, the repository kiratech/labs 
  
 As in the previous lab, in order to execute this laboratory, you will be asked to install a set of tools common in Agent engineering field.
 
-### 5.1 Create a virtual environment
+### 5.1 Clone the repository
+
+To start, clone the lab repository by running the following command in the terminal:
+
+```sh
+  git clone https://github.com/kiratech/labs.git
+```
+
+After cloning the repository, checkout the `academy-ai` branch:
+
+```sh
+  git checkout academy-ai
+```  
+
+Then, navigate to the project folder:
+
+```sh
+  cd labs/Workshops/AI/04-Agents-and-RAG
+```  
+
+This folder contains resources related to this lab. Now you can open it in your favorite code editor (e.g., VS Code, PyCharm) to explore the files and follow along with the exercises. For VS Code, you can run:
+
+```sh
+  code .
+```  
+
+### 5.2 Create a virtual environment
 
 A virtual environment allows you to isolate the project's dependencies from the system-wide ones. If you have an active conda environment, please deactivate it first via `conda deactivate`.
 
@@ -303,7 +336,7 @@ python -m venv .venv && source .venv/bin/activate
 
 You should see the prompt change to indicate that the virtual environment is active (e.g., `(.venv) user@machine:~/path/to/repo`).
 
-### 5.2 Create and edit `.env`:
+### 5.3 Create and edit `.env`:
 
 This project uses environment variables for configuration. Create a `.env` file by copying the provided example:
 
@@ -311,7 +344,7 @@ This project uses environment variables for configuration. Create a `.env` file 
 cp .env.example .env
 ```
 
-### 5.3 Install & run the FastAPI service:
+### 5.4 Install & run the FastAPI service:
 
 Now, install the required dependencies and start the FastAPI service:
 
@@ -322,7 +355,7 @@ uvicorn src.lab_service.app:app --reload
 
 The service will be available at `http://localhost:8000`.
 
-### 5.4 Test the service:
+### 5.5 Test the service:
 
 ```bash
 curl -X 'GET' \
@@ -363,12 +396,12 @@ curl -s -X POST http://localhost:8000/rag/ingest \
 }
 ```
 
-You should also see the persist directory updated under your Chroma path. If `chunks` is `0` or the call fails, check that `source_dir` exists and that `.env` contains valid embedding model settings. 
+**What are chunks?** During ingestion each policy document is split into small, overlapping slices (usually a few hundred tokens). These chunks are embedded and stored individually so semantic search can pull back only the clauses that matter. 
 
 ### 6.2 Explore search results
 
 ```bash
-curl -s -X POST http://localhost:8000/rag/search \
+curl -s -X POST http://localhost:8000/rag/retrieve \
   -H "Content-Type: application/json" \
   -d '{"query":"voucher cap consumer","k":8}' | jq
 ```
@@ -386,8 +419,8 @@ curl -s -X POST http://localhost:8000/rag/search \
   "query": "voucher cap consumer",
   "results": [
     {
-      "text": "# Shipping & SLA (SLA-200) — ...",
-      "snippet": "# Shipping & SLA (SLA-200) — ... (shorter)",
+      "text": "# Shipping & SLA (SLA-200) - ...",
+      "snippet": "# Shipping & SLA (SLA-200) - ... (shorter)",
       "meta": {
         "chunk": 0,
         "source": "data/policies/20_shipping_sla.md"
@@ -418,7 +451,7 @@ You should recognize policy IDs in `source`/`metadata` (e.g., `SLA-214`). If res
 ### 6.3 Ask with citations (RAG only)
 
 ```bash
-curl -s -X POST http://localhost:8000/rag/query \
+curl -s -X POST http://localhost:8000/rag/generate \
   -H "Content-Type: application/json" \
   -d '{
     "question":"What is the voucher cap for late deliveries and when does it apply?"
@@ -457,7 +490,7 @@ If there are no citations, verify the KB and that your LLM endpoint is reachable
 This section shows how the agent (LangGraph-orchestrated) plans, calls tools (`search_policies`, `calc`, `create_ticket`), and returns a final answer. Each example explains the request, the expected tool calls, and the typical JSON shape. 
 Keep **LangSmith** open, agent traces are particularly useful to inspect plan/act loops and tool I/O.
 
-### 7.1 Basic “ticketing” scenario
+### 7.1 Basic "ticketing" scenario
 
 ```bash
 curl -s -X POST http://localhost:8000/agent/ask \
@@ -521,7 +554,7 @@ curl -s -X POST http://localhost:8000/agent/ask \
 * Voucher: **20% of €1,200 = €240**, **capped at €50** (`[SLA-212][SLA-214]`).
 * Net outcome clearly explained in the final answer with citations.
 
-If the cap isn’t applied, open the LangSmith run to confirm `calc` input/output and that the agent read the right clause. 
+If the cap isn't applied, open the LangSmith run to confirm `calc` input/output and that the agent read the right clause. 
 
 ### 7.3 Digital activation error scenario
 
@@ -544,11 +577,11 @@ curl -s -X POST http://localhost:8000/agent/ask \
 * If policy requires it, `create_ticket` opens a **returns** ticket (e.g., `[TCK-531]`).
 * Final answer references both digital policy and ticketing rule, plus any amounts.
 
-If no ticket is created, confirm the agent’s branching logic in the LangGraph trace and that `[TCK-531]` conditions are actually met for your KB. 
+If no ticket is created, confirm the agent's branching logic in the LangGraph trace and that `[TCK-531]` conditions are actually met for your KB. 
 
 ---
 
-## 8. KB Swap: "Good" vs "Bad" Policies (RAG Contrast Demo)
+## 8. Knowledge Base Swap: "Good" vs "Bad" Policies (RAG Contrast Demo)
 
 To demonstrate KB-driven behavior:
 
@@ -568,7 +601,7 @@ Although Retrieval-Augmented Generation (RAG) and Agents often coexist within th
 
 ### 9.1 RAG (Retrieval-Augmented Generation)
 
-RAG extends a language model’s knowledge by retrieving relevant information from external sources before generating an answer. It grounds the model’s output in verifiable, domain-specific data rather than relying on its static memory.
+RAG extends a language model's knowledge by retrieving relevant information from external sources before generating an answer. It grounds the model's output in verifiable, domain-specific data rather than relying on its static memory.
 
 Typical use cases:
 
@@ -588,7 +621,7 @@ Typical use cases:
 - Conditional logic and business rule enforcement
 - Multi-step decision flows requiring both reasoning and action
 
-Example: A user asks, "Delivery was 11 days late—if required, open a ticket and calculate compensation." The agent reasons about the conditions, uses RAG to fetch the policy, calls calc to compute the refund, and finally triggers create_ticket.
+Example: A user asks, "Delivery was 11 days late-if required, open a ticket and calculate compensation." The agent reasons about the conditions, uses RAG to fetch the policy, calls calc to compute the refund, and finally triggers create_ticket.
 
 ## 10. Conclusions
 
@@ -603,11 +636,11 @@ In the previous sessions, we explored:
 Through this progression, we moved from understanding LLMs to engineering with LLMs.  
 Key takeaways from this final stage:
 
-- Grounding is essential: RAG transforms static models into domain-aware assistants by connecting them to your organization’s data.
+- Grounding is essential: RAG transforms static models into domain-aware assistants by connecting them to your organization's data.
 - Reasoning unlocks autonomy: agentic workflows powered by LangGraph and LangChain let models plan, decide, and act with explicit tool use.
 - Observability ensures trust: LangSmith provides the transparency needed to debug, compare, and validate complex AI behaviors.
 - Integration defines value: LLMs become business-ready when embedded within APIs, governance rules, and reproducible workflows.
 
 By completing this lab, you now have a full view of what it means to design, deploy, and monitor LLM-based systems that act responsibly and reliably.
 
-The next step is not another lab, it’s applying these patterns to real projects: turning proof-of-concepts into production-grade AI services, and continuously evolving them as the ecosystem grows.
+The next step is not another lab, it's applying these patterns to real projects: turning proof-of-concepts into production-grade AI services, and continuously evolving them as the ecosystem grows.
