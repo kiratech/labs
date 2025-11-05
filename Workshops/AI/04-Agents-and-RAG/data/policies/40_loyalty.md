@@ -13,5 +13,5 @@ Defines loyalty program rules: tiers, benefits, eligibility, voucher issuance an
 - [LOY-432] Redeem 100 pts = €1; cannot pay taxes/fees with points.
 - [LOY-433] Points expire after 18 months of inactivity.
 
-**Note**  
+**Note**
 [LOY-421]/[LOY-422] **extend** but do not remove other rules (e.g., restocking).

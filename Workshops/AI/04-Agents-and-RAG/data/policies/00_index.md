@@ -55,7 +55,7 @@ Keep English concise.
 - **Do not** open tickets outside these clauses (**[TCK-593]**).
 
 ### Caps & Amounts (CORE-019)
-- Consumer voucher cap **[SLA-214]**; B2B cap **[SLA-242]**.  
+- Consumer voucher cap **[SLA-214]**; B2B cap **[SLA-242]**.
 - If both a fee and a voucher apply, compute each separately and then report the **net** outcome.
 
 ### Insufficient Information (CORE-020)

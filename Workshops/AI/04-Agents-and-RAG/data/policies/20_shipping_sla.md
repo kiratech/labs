@@ -9,7 +9,7 @@ Covers shipping, delivery SLAs, late-delivery vouchers, lost shipments, signatur
 - [SLA-211] ≥ 2 business days late: 10% voucher.
 - [SLA-212] ≥ 5 business days late: 20% voucher.
 - [SLA-213] ≥ 10 business days late: free shipping credit + 25% voucher.
-- [SLA-214] **Voucher cap €50 per order** (consumer).  
+- [SLA-214] **Voucher cap €50 per order** (consumer).
 - [SLA-215] Customer must contact us within 14 days of delivery for a voucher claim.
 
 ## Exclusions (SLA-22x)

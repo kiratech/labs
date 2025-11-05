@@ -14,7 +14,7 @@ You will deploy a FastAPI backend with `/rag/*` and `/agent/ask`, run a curated 
 
 ## Context
 
-Imagine you're on the escalation desk of a e-commerce platform: every day you have to manage late deliveries, defective bundles, and digital activations that fail minutes before launch. Policies change weekly, refunds depend on caps buried in PDFs, and compliance demands you cite the exact clause before touching a customer's order.  
+Imagine you're on the escalation desk of a e-commerce platform: every day you have to manage late deliveries, defective bundles, and digital activations that fail minutes before launch. Policies change weekly, refunds depend on caps buried in PDFs, and compliance demands you cite the exact clause before touching a customer's order.
 This lab puts you in control of that chaos, building an agent that can surface the right policy on demand, compute the precise euro amount, and, when escalation is mandatory, open the ticket with the same discipline a seasoned specialist would.
 
 ---
@@ -243,7 +243,7 @@ This flow ensures factual, source-based answers rather than hallucinated ones. E
 
 When the /agent/ask endpoint is called, the request is routed to a LangGraph Agent, which combines reasoning and action:
 - The model receives the user query and decides whether to call one or more tools, such as:
-  
+
   - search_policies to retrieve evidence from the vector database,
   - calc to compute compensations or voucher caps,
   - create_ticket to open and persist a JSON ticket in the tickets/ directory.
@@ -270,7 +270,7 @@ LangSmith effectively transforms the system into a transparent and auditable wor
 
 The repository is structured as follows:
 
-```
+```text
 src/lab_service/
   app.py               # FastAPI entrypoint for router endpoints
   models.py            # Pydantic models of requests and responses
@@ -287,9 +287,9 @@ artifacts/chroma_*     # Chroma persist directories per KB
 
 ## 4. Prerequisites
 
-This lab assumes that Python is already installed, the repository kiratech/labs is accessible, and Git is properly configured on your local machine. 
+This lab assumes that Python is already installed, the repository kiratech/labs is accessible, and Git is properly configured on your local machine.
 
-* Python **3.12+** 
+* Python **3.12+**
 * [**HuggingFace**](https://huggingface.co/) account & API key. Once logged in, create an access token with `read` permissions from https://huggingface.co/settings/tokens.
 * `curl` and `jq`
 * [**LangSmith**](https://smith.langchain.com/) account & API key. Once logged in, create an access token in your `settings/API key` section.
@@ -297,7 +297,7 @@ This lab assumes that Python is already installed, the repository kiratech/labs 
 ---
 
 ## 5. Environment Setup
- 
+
 As in the previous lab, in order to execute this laboratory, you will be asked to install a set of tools common in Agent engineering field.
 
 ### 5.1 Clone the repository
@@ -312,19 +312,19 @@ After cloning the repository, checkout the `academy-ai` branch:
 
 ```sh
   git checkout academy-ai
-```  
+```
 
 Then, navigate to the project folder:
 
 ```sh
   cd labs/Workshops/AI/04-Agents-and-RAG
-```  
+```
 
 This folder contains resources related to this lab. Now you can open it in your favorite code editor (e.g., VS Code, PyCharm) to explore the files and follow along with the exercises. For VS Code, you can run:
 
 ```sh
   code .
-```  
+```
 
 ### 5.2 Create a virtual environment
 
@@ -367,7 +367,7 @@ curl -X 'GET' \
 
 ## 6. Step-by-Step: Running RAG
 
-This section walks through the RAG flow end-to-end, explaining each `curl` flag, the request/response schema, and what you should see in the service and in LangSmith traces. Endpoints are served by the FastAPI app running on `http://localhost:8000`. 
+This section walks through the RAG flow end-to-end, explaining each `curl` flag, the request/response schema, and what you should see in the service and in LangSmith traces. Endpoints are served by the FastAPI app running on `http://localhost:8000`.
 
 ### 6.1 Ingest the Knowledge Base
 
@@ -396,7 +396,7 @@ curl -s -X POST http://localhost:8000/rag/ingest \
 }
 ```
 
-**What are chunks?** During ingestion each policy document is split into small, overlapping slices (usually a few hundred tokens). These chunks are embedded and stored individually so semantic search can pull back only the clauses that matter. 
+**What are chunks?** During ingestion each policy document is split into small, overlapping slices (usually a few hundred tokens). These chunks are embedded and stored individually so semantic search can pull back only the clauses that matter.
 
 ### 6.2 Explore search results
 
@@ -446,7 +446,7 @@ curl -s -X POST http://localhost:8000/rag/retrieve \
 }
 ```
 
-You should recognize policy IDs in `source`/`metadata` (e.g., `SLA-214`). If results look irrelevant or empty, re-check embeddings, re-ingest with `reset:true`, or adjust `k`. 
+You should recognize policy IDs in `source`/`metadata` (e.g., `SLA-214`). If results look irrelevant or empty, re-check embeddings, re-ingest with `reset:true`, or adjust `k`.
 
 ### 6.3 Ask with citations (RAG only)
 
@@ -481,13 +481,13 @@ curl -s -X POST http://localhost:8000/rag/generate \
 }
 ```
 
-If there are no citations, verify the KB and that your LLM endpoint is reachable/configured. 
+If there are no citations, verify the KB and that your LLM endpoint is reachable/configured.
 
 ---
 
 ## 7. Step-by-Step: Running the Agent
 
-This section shows how the agent (LangGraph-orchestrated) plans, calls tools (`search_policies`, `calc`, `create_ticket`), and returns a final answer. Each example explains the request, the expected tool calls, and the typical JSON shape. 
+This section shows how the agent (LangGraph-orchestrated) plans, calls tools (`search_policies`, `calc`, `create_ticket`), and returns a final answer. Each example explains the request, the expected tool calls, and the typical JSON shape.
 Keep **LangSmith** open, agent traces are particularly useful to inspect plan/act loops and tool I/O.
 
 ### 7.1 Basic "ticketing" scenario
@@ -523,7 +523,7 @@ curl -s -X POST http://localhost:8000/agent/ask \
 }
 ```
 
-Check the `tickets/` directory for a new file named after `ticket_id`. In LangSmith, you should see the two tool calls in the run tree. If no ticket appears, inspect the tool call arguments and policy thresholds in the trace. 
+Check the `tickets/` directory for a new file named after `ticket_id`. In LangSmith, you should see the two tool calls in the run tree. If no ticket appears, inspect the tool call arguments and policy thresholds in the trace.
 
 ### 7.2 "Calc + Cap" scenario
 
@@ -554,7 +554,7 @@ curl -s -X POST http://localhost:8000/agent/ask \
 * Voucher: **20% of €1,200 = €240**, **capped at €50** (`[SLA-212][SLA-214]`).
 * Net outcome clearly explained in the final answer with citations.
 
-If the cap isn't applied, open the LangSmith run to confirm `calc` input/output and that the agent read the right clause. 
+If the cap isn't applied, open the LangSmith run to confirm `calc` input/output and that the agent read the right clause.
 
 ### 7.3 Digital activation error scenario
 
@@ -577,7 +577,7 @@ curl -s -X POST http://localhost:8000/agent/ask \
 * If policy requires it, `create_ticket` opens a **returns** ticket (e.g., `[TCK-531]`).
 * Final answer references both digital policy and ticketing rule, plus any amounts.
 
-If no ticket is created, confirm the agent's branching logic in the LangGraph trace and that `[TCK-531]` conditions are actually met for your KB. 
+If no ticket is created, confirm the agent's branching logic in the LangGraph trace and that `[TCK-531]` conditions are actually met for your KB.
 
 ---
 
@@ -593,7 +593,7 @@ curl -s -X POST http://localhost:8000/rag/ingest \
   -d '{"source_dir":"data/bad_policies","reset":true}'
 ```
 
-2. Re-run **exactly the same** agent calls as 7.1–7.3 and compare outcomes and citations. In LangSmith, you should see different retrieved passages, decisions, and amounts. 
+2. Re-run **exactly the same** agent calls as 7.1–7.3 and compare outcomes and citations. In LangSmith, you should see different retrieved passages, decisions, and amounts.
 
 ## 9. RAG vs Agents: When and Why
 
@@ -613,7 +613,8 @@ Example: A user asks, "What is the refund cap for late deliveries?" RAG retrieve
 
 ### 9.2 Agents with Integrated Tools
 
-Agents focus on reasoning and decision-making. They can call multiple tools to perform calculations, trigger actions, or make multi-step decisions.
+Agents focus on reasoning and decision-making.
+They can call multiple tools to perform calculations, trigger actions, or make multi-step decisions.
 
 Typical use cases:
 
@@ -625,7 +626,7 @@ Example: A user asks, "Delivery was 11 days late-if required, open a ticket and 
 
 ## 10. Conclusions
 
-This lab marks the closing chapter of the AI Academy track, completing the journey from model foundations to production-grade applications.  
+This lab marks the closing chapter of the AI Academy track, completing the journey from model foundations to production-grade applications.
 In the previous sessions, we explored:
 
 - Lab 1: Model foundations and experiment tracking: introduced core ML concepts using MLflow to manage experiments, metrics, and artifacts, establishing reproducibility and version control as foundational practices.
@@ -633,7 +634,7 @@ In the previous sessions, we explored:
 - Lab 3: LoRA fine-tuning and prompt engineering: explored efficient model adaptation through LoRA and demonstrated how advanced prompting techniques can refine model behavior without retraining.
 - Lab 4 (this lab): Orchestration and reasoning: integrates all previous concepts by combining retrieval-augmented generation (RAG) and agent-based reasoning, creating systems that connect knowledge and action under full observability.
 
-Through this progression, we moved from understanding LLMs to engineering with LLMs.  
+Through this progression, we moved from understanding LLMs to engineering with LLMs.
 Key takeaways from this final stage:
 
 - Grounding is essential: RAG transforms static models into domain-aware assistants by connecting them to your organization's data.

@@ -17,5 +17,5 @@ Describes ticketing and escalation procedures (TCK-5xx): when to open logistics 
 
 ## Notes (TCK-59x)
 - [TCK-591] Do **not** open a ticket if the case is fully resolved by a straightforward policy answer and no follow-up is required.
-- [TCK-592] Minimum ticket payload: `category` (`logistics` or `returns`) and a short `reason`. 
+- [TCK-592] Minimum ticket payload: `category` (`logistics` or `returns`) and a short `reason`.
 - [TCK-593] Do NOT open a ticket solely based on user request; a matching TCK-5xx condition is required.
