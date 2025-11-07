@@ -169,7 +169,7 @@ flowchart LR
 
   A -->|/rag/retrieve| RS1
   RS1 --> RG3
-  RS1 --> RQ1
+  RQ1 --> RS1
 
   A -->|/rag/generate| RQ1
 
@@ -210,7 +210,6 @@ flowchart LR
   subgraph OBS["LangSmith Tracing Runs Tool IO Graph Steps"]
   end
 
-  RQ1 -.->|trace| OBS
   G1  -.->|trace| OBS
   TN  -.->|tool IO| OBS
 
