@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_info() {
+    echo -e "${BLUE}ℹ${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_step() {
+    echo ""
+    echo -e "${GREEN}$1${NC}"
+    echo ""
+}
+
+print_header() {
+    echo ""
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}  $1${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
+check_kyverno() {
+    print_info "Checking Kyverno..."
+    if ! kubectl get namespace kyverno &> /dev/null; then
+        print_error 'Kyverno is not installed. Please install it first.'
+        echo 'To install Kyverno:'
+        echo 'helm repo add kyverno https://kyverno.github.io/kyverno/'
+        echo 'helm update'
+        echo 'helm upgrade --install kyverno kyverno/kyverno \'
+        echo '    --create-namespace --namespace kyverno'
+        echo '    --version 3.1.4'
+        exit 1
+    fi
+    print_success "Kyverno is present."
+}
+
+check_kyverno_policy_reporter() {
+    if ! kubectl get namespace policy-reporter &> /dev/null; then
+        print_error 'Policy Reporter is not installed. Please install it first.'
+        echo 'To install Kyverno Policy Reporter:'
+        echo 'helm repo add policy-reporter https://kyverno.github.io/policy-reporter'
+        echo 'helm update'
+        echo 'helm upgrade --install policy-reporter policy-reporter/policy-reporter \'
+        echo '    --create-namespace --namespace policy-reporter \'
+        echo '    --set ui.enabled=true \'
+        echo '    --set kyvernoPlugin.enabled=true \'
+        echo '    --set ui.plugins.kyverno=true'
+        exit 1
+    fi
+}
