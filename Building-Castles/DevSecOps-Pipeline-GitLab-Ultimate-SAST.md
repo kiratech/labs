@@ -12,7 +12,7 @@ a policy that will prevent security problems from being merged.
 To activate a policy that will block merge requests if SAST problems are found,
 move into the group Policies page:
 
-[http://172.16.99.1:8080/groups/building-castles/-/security/policies](http://172.16.99.1:8080/groups/building-castles/-/security/policies)
+[https://172.16.99.1:8443/groups/building-castles/-/security/policies](https://172.16.99.1:8443/groups/building-castles/-/security/policies)
 
 Press the `New policy` button, and under `Merge request approval policy` press
 the `Select policy` button, and fill with these content the relative fields:
@@ -93,20 +93,29 @@ To ssh://172.16.99.1:2222/building-castles/myproject.git
 branch 'activate-ci' set up to track 'origin/activate-ci'.
 ```
 
-By moving into the GitLab UI and impersonate `DevSecOps` a message similar to:
+By moving into the GitLab UI and impersonate `DevSecOps`:
+
+[https://172.16.99.1:8443/admin/users/devsecops](https://172.16.99.1:8443/admin/users/devsecops)
+
+A message similar to:
 
 > You pushed to activate-ci at building-castles / myproject 3 minutes ago
 
-with a `Create merge request` button should appear.
+with a `Create merge request` button should appear. If not, go to:
 
-Press the button and in the next summary page press `Create merge request`.
+[https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/new](https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/new)
 
-Assign reviewer role to the user `MntDevSecOps`, then stop impersonating
-`DevSecOps` and become `MntDevSecOps` to approve the review.
+And select `activate-ci` branch on the left and then `Compare branches and
+continue`.
+
+In the merge page that appears, assign both `Assignees` and `Reviewer` to the
+user `MntDevSecOps`, and then press `Create merge request`.
+
+Stop impersonating `DevSecOps` and become `MntDevSecOps` to approve the review.
 
 Go to:
 
-[http://172.16.99.1:8080/building-castles/myproject/-/merge_requests/1](http://172.16.99.1:8080/building-castles/myproject/-/merge_requests/1)
+[https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/1](https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/1)
 
 You will see that the merge is blocked because it needs an approval.
 
@@ -201,15 +210,16 @@ $ git add . && git commit -m "Introduce faulty code"
  create mode 100644 python/script.py
 
 $ git push
-Warning: Permanently added '[172.16.99.1]:2222' (ED25519) to the list of known hosts.
+Enumerating objects: 9, done.
+Counting objects: 100% (9/9), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (7/7), 857 bytes | 857.00 KiB/s, done.
+Total 7 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: GitLab: You are not allowed to push code to protected branches on this project.
 To ssh://172.16.99.1:2222/building-castles/myproject.git
- ! [rejected]        main -> main (fetch first)
+ ! [remote rejected] main -> main (pre-receive hook declined)
 error: failed to push some refs to 'ssh://172.16.99.1:2222/building-castles/myproject.git'
-hint: Updates were rejected because the remote contains work that you do not
-hint: have locally. This is usually caused by another repository pushing to
-hint: the same ref. If you want to integrate the remote changes, use
-hint: 'git pull' before pushing again.
-hint: See the 'Note about fast-forwards' in 'git push --help' for details.
 ```
 
 The reason why we're getting an error is that we're trying to push on branch
@@ -220,6 +230,8 @@ create a merge request from the GitLab interface:
 
 ```console
 $ git reset --soft HEAD^1
+(no output)
+
 $ git status
 On branch main
 Your branch is up to date with 'origin/main'.
@@ -231,6 +243,8 @@ Changes to be committed:
         new file:   python/script.py
 
 $ git log --oneline
+131b023 (HEAD -> main, origin/main) Merge branch 'activate-ci' into 'main'
+b85424e (origin/activate-ci, activate-ci) Activate CI
 6a32ed6 (HEAD -> main, origin/main) Initial commit
 
 $ git checkout -b first-test
@@ -264,11 +278,11 @@ branch 'first-test' set up to track 'origin/first-test'.
 Log into the GitLab web interface and become the `devsecops` user by
 clocking `Impersonate` from the user page:
 
-[http://172.16.99.1:8080/admin/users/devsecops/](http://172.16.99.1:8080/admin/users/devsecops/)
+[https://172.16.99.1:8443/admin/users/devsecops/](https://172.16.99.1:8443/admin/users/devsecops/)
 
 Move into the project page:
 
-[http://172.16.99.1:8080/dashboard/projects](http://172.16.99.1:8080/dashboard/projects)
+[https://172.16.99.1:8443/dashboard/projects](https://172.16.99.1:8443/dashboard/projects)
 
 You should see a message like:
 
@@ -276,8 +290,8 @@ You should see a message like:
 
 With a `Create merge request` button. Click on it.
 
-In the merge request summary page under `Assignees` select `MntDevSecOps` and
-press `Create merge request`.
+In the merge request summary page under `Assignees` and `Reviewers` select
+`MntDevSecOps` and press `Create merge request`.
 
 ## Manage the problems
 
@@ -356,8 +370,16 @@ After some time, the merge request will change its status, because the problems
 were fixed.
 
 This means that, after becoming `MntDevSecOps` again, it will be possible to
-approve the merge, following the same process used to activate the CI, and have
-the new code included inside the `main` branch:
+approve the merge.
+
+Select the merge from:
+
+[https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/](https://172.16.99.1:8443/building-castles/myproject/-/merge_requests/)
+
+And follow the same process used to activate the CI, by approving the review and
+pressing `Merge`.
+
+To include the merge inside the `main` branch, on the terminal:
 
 ```console
 $ git checkout main
@@ -380,4 +402,13 @@ Fast-forward
  3 files changed, 14 insertions(+), 93 deletions(-)
  create mode 100644 manifests/Pod.yml
  create mode 100644 python/script.py
+
+$ git log --oneline
+518849d (HEAD -> main, origin/main) Merge branch 'first-test' into 'main'
+9d741e4 (origin/first-test, first-test) Fix Python script
+ad61426 Fix Pod manifest
+2189697 Introduce faulty code
+131b023 Merge branch 'activate-ci' into 'main'
+b85424e (origin/activate-ci, activate-ci) Activate CI
+8e74315 Initial commit
 ```
