@@ -12,18 +12,25 @@ exposing these ports (Host/Container):
 - 2222:22
 
 ```console
-$ GITLAB_HOME=$HOME/gitlab; \
-  docker run --detach \
+$ GITLAB_HOME=$HOME/gitlab \
+  docker run \
+  --detach \
   --name gitlab \
-  --publish 8080:80 \
-  --publish 8443:443 \
-  --publish 2222:22 \
+  --publish 172.16.99.1:8080:80 \
+  --publish 172.16.99.1:8443:8443 \
+  --publish 172.16.99.1:2222:22 \
+  --publish 172.16.99.1:5000:5000 \
+  --publish 172.16.99.1:5050:5050 \
   --volume $GITLAB_HOME/config:/etc/gitlab \
   --volume $GITLAB_HOME/data:/var/opt/gitlab \
+  --env GITLAB_OMNIBUS_CONFIG="external_url 'https://172.16.99.1:8443'; registry_external_url 'https://172.16.99.1:5050'" \
   --shm-size=2gb \
   gitlab/gitlab-ee
 ...
 ```
+
+The meaning of some of the options used to launch the GitLab Ultimate container
+will be explained further in the laboratories.
 
 Check the progresses, until the web interface comes up:
 
@@ -49,9 +56,12 @@ Password: nGd+wEG+fIaw+reKUun3YbqrMXYK0JdDMEwE9SwOu1U=
 # NOTE: This file will be automatically deleted in the first reconfigure run after 24 hours.
 ```
 
-Login into interface and add the Ultimate Subscription:
+Login into interface and, after accepting the self signed certificate, go to the
+GitLab Ultimate Subscription page:
 
-<ADDIMAGES>
+[https://172.16.99.1:8443/admin/subscription](https://172.16.99.1:8443/admin/subscription)
+
+Insert the activation code and press `Activate`.
 
 ## Configure Users
 
@@ -62,7 +72,7 @@ the project maintainer, and `DevSecOps`, the project developer.
 
 To create the project owner go to:
 
-[http://172.16.99.1:8080/admin/users/new](http://172.16.99.1:8080/admin/users/new)
+[https://172.16.99.1:8443/admin/users/new](https://172.16.99.1:8443/admin/users/new)
 
 Fill with these inputs:
 
@@ -101,13 +111,15 @@ $ cat admdevsecops.pub
 ...
 ```
 
-And then add the key by Impersonating the newly created user:
+And then add the key by Impersonating the newly created user. Go to:
 
-[http://172.16.99.1:8080/admin/users/admdevsecops/impersonate](http://172.16.99.1:8080/admin/users/admdevsecops/impersonate)
+[https://172.16.99.1:8443/admin/users/admdevsecops/](https://172.16.99.1:8443/admin/users/admdevsecops/)
 
-And by adding the `admdevsecops.pub` contents as a key for the user:
+Click `Impersonate`.
 
-[http://172.16.99.1:8080/-/profile/keys](http://172.16.99.1:8080/-/profile/keys)
+Add the `admdevsecops.pub` contents as a key for the user:
+
+[https://172.16.99.1:8443/-/user_settings/ssh_keys](https://172.16.99.1:8443/-/user_settings/ssh_keys)
 
 Move out from impersonation by click on the `Stop impersonation` icon on the
 top right corner.
@@ -116,7 +128,7 @@ top right corner.
 
 To create the maintainer user go to:
 
-[http://172.16.99.1:8080/admin/users/new](http://172.16.99.1:8080/admin/users/new)
+[https://172.16.99.1:8443/admin/users/new](https://172.16.99.1:8443/admin/users/new)
 
 Fill with these inputs:
 
@@ -157,11 +169,11 @@ $ cat mntdevsecops.pub
 
 And then add the key by Impersonating the newly created user:
 
-[http://172.16.99.1:8080/admin/users/mntdevsecops/impersonate](http://172.16.99.1:8080/admin/users/mntdevsecops/impersonate)
+[https://172.16.99.1:8443/admin/users/mntdevsecops/](https://172.16.99.1:8443/admin/users/mntdevsecops/)
 
 And by adding the `mntdevsecops.pub` contents as a key for the user:
 
-[http://172.16.99.1:8080/-/profile/keys](http://172.16.99.1:8080/-/profile/keys)
+[https://172.16.99.1:8443/-/user_settings/ssh_keys](https://172.16.99.1:8443/-/user_settings/ssh_keys)
 
 Move out from impersonation by click on the `Stop impersonation` icon on the
 top right corner.
@@ -171,7 +183,7 @@ top right corner.
 To create the `devsecops` user, which will be our developer, use the same link
 as before:
 
-[http://172.16.99.1:8080/admin/users/new](http://172.16.99.1:8080/admin/users/new)
+[https://172.16.99.1:8443/admin/users/new](https://172.16.99.1:8443/admin/users/new)
 
 This time give these inputs:
 
@@ -193,11 +205,11 @@ $ cat ~/.ssh/id_rsa.pub
 
 And then add the key by Impersonating the newly created user:
 
-[http://172.16.99.1:8080/admin/users/devsecops/impersonate](http://172.16.99.1:8080/admin/users/devsecops/impersonate)
+[https://172.16.99.1:8443/admin/users/devsecops/](https://172.16.99.1:8443/admin/users/devsecops/)
 
 And by adding the `id_rsa.pub` contents as a key for the user:
 
-[http://172.16.99.1:8080/-/profile/keys](http://172.16.99.1:8080/-/profile/keys)
+[https://172.16.99.1:8443/-/user_settings/ssh_keys](https://172.16.99.1:8443/-/user_settings/ssh_keys)
 
 Move out from impersonation by click on the `Stop impersonation` icon on the
 top right container.
@@ -206,7 +218,7 @@ top right container.
 
 Create a group named `building-castles` where the test repository will live:
 
-[http://172.16.99.1:8080/groups/new#create-group-pane](http://172.16.99.1:8080/groups/new#create-group-pane)
+[https://172.16.99.1:8443/groups/new#create-group-pane](https://172.16.99.1:8443/groups/new#create-group-pane)
 
 Fill just:
 
@@ -216,7 +228,7 @@ And then press `Create group`.
 
 After this add `AdmDevSecOps` to the group, go to:
 
-[http://172.16.99.1:8080/groups/building-castles/-/group_members](http://172.16.99.1:8080/groups/building-castles/-/group_members)
+[https://172.16.99.1:8443/groups/building-castles/-/group_members](https://172.16.99.1:8443/groups/building-castles/-/group_members)
 
 And press `Invite members`, and put `AdmDevSecOps` as `Owner` role for the
 group. This will make us able to use this user to create security policies.
@@ -225,7 +237,7 @@ group. This will make us able to use this user to create security policies.
 
 Create a project where all the tests will be made:
 
-[http://172.16.99.1:8080/projects/new#blank_project](http://172.16.99.1:8080/projects/new#blank_project)
+[https://172.16.99.1:8443/projects/new#blank_project](https://172.16.99.1:8443/projects/new#blank_project)
 
 By passing just:
 
@@ -233,11 +245,11 @@ By passing just:
 
 And ensuring group is `building-castles` then pressing `Create project`.
 
-## Add members
+## Add members to myproject
 
 Go to:
 
-[http://172.16.99.1:8080/building-castles/myproject/-/project_members](http://172.16.99.1:8080/building-castles/myproject/-/project_members)
+[https://172.16.99.1:8443/building-castles/myproject/-/project_members](https://172.16.99.1:8443/building-castles/myproject/-/project_members)
 
 and by pressing `Invite memebers`, add three members as:
 
@@ -302,9 +314,9 @@ Fix the IP address of the GitLab Git clone url.
 Using the web interface, as `Administrator` user, change the `Custom Git clone
 URL for HTTP(S)` value in the `Visibility and access controls` section at:
 
-[http://172.16.99.1:8080/admin/application_settings/general](http://172.16.99.1:8080/admin/application_settings/general)
+[https://172.16.99.1:8443/admin/application_settings/general](https://172.16.99.1:8443/admin/application_settings/general)
 
-Adding the GitLab IP related url, in this case `http://172.16.99.1:8080`
+Adding the GitLab IP related url, in this case `https://172.16.99.1:8443`
 check [DevSecOps-Pipeline-Requirements.md](DevSecOps-Pipeline-Requirements.md)
 to find out how to get the IP host.
 
@@ -312,7 +324,7 @@ to find out how to get the IP host.
 
 Get the GitLab runner token registration at:
 
-[http://172.16.99.1:8080/building-castles/myproject/-/settings/ci_cd](http://172.16.99.1:8080/devsecops/myproject/-/settings/ci_cd)
+[https://172.16.99.1:8443/building-castles/myproject/-/settings/ci_cd](https://172.16.99.1:8443/building-castles/myproject/-/settings/ci_cd)
 
 Expanding the "Runners" section and selecting the three dots beside `New
 project runner` and finally copying the token, which will be something like
@@ -331,6 +343,7 @@ $ docker run --detach \
   --privileged \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   --volume $PWD/gitlab-runner:/etc/gitlab-runner \
+  --volume $PWD/config/ssl:/etc/gitlab-runner/certs \
   gitlab/gitlab-runner:v18.4.0
 ...
 ```
@@ -340,14 +353,13 @@ docker host IP):
 
 ```console
 $ docker exec --interactive --tty gitlab-runner gitlab-runner register -n \
-  --url http://172.16.99.1:8080 \
+  --url https://172.16.99.1:8443 \
   --registration-token GR1348941uHeDhAB5DDA8r_5xvxsm \
   --executor docker \
   --description "My Docker Runner" \
   --docker-image "docker:latest" \
   --docker-privileged \
-  --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-  --docker-volumes "/certs/client"
+  --docker-volumes "/var/run/docker.sock:/var/run/docker.sock"
 Runtime platform                                    arch=amd64 os=linux pid=54 revision=85586bd1 version=16.0.2
 Running in system-mode.
 
