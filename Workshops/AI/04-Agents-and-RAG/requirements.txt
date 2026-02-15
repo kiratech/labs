@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+chromadb
+sentence-transformers
+python-dotenv
+
+# Hugging Face + agent stack
+huggingface_hub
+langchain
+langchain-core
+langchain-huggingface
+langgraph
+sentencepiece 
+transformers 
+tokenizers
+langsmith
