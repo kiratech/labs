@@ -39,11 +39,16 @@ USER nonroot
 CMD /usr/bin/nc -l -k -p ${NCAT_PORT} -e /bin/echo -e "${NCAT_HEADER}\n\n${NCAT_MESSAGE}"
 ```
 
-Add the build process to the pipeline adding to `.gitlab-ci.yml` this code:
+Add the build process to the pipeline making `.gitlab-ci.yml` similar to this:
 
 ```yaml
+include:
+- template: Security/SAST.gitlab-ci.yml
+
 variables:
-  ...
+  SECURE_LOG_LEVEL: debug
+  SCAN_KUBERNETES_MANIFESTS: 'true'
+  DOCKER_BUILDKIT: 0
   CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
 
 stages:
@@ -60,6 +65,13 @@ build-image:
 sast:
   stage: test
 ```
+
+**Note**: setting the variabile `DOCKER_BUILDKIT` to zero is needed because
+there's [an active bug](https://forum.gitlab.com/t/started-yesterday-docker-push-error-from-registry-blob-unknown-to-registry/134733/14)
+that today can be work-arounded by assigning that variable
+(`BUILDX_NO_DEFAULT_ATTESTATIONS: 1` would work as well).
+These options are deprecated, so it would be better to monitor [this issue](https://gitlab.com/gitlab-org/container-registry/-/work_items/2367)
+to check when they could be removed.
 
 Before the commit and push, a new branch should be created, so that it will be
 possible to create the merge request:
@@ -108,8 +120,9 @@ Press the `New policy` button, and under `Merge request approval policy` press
 the `Select policy` button, and fill with these content the relative fields:
 
 - Name: `Check for Container images High and Critical problems`.
-- Policy scope: Apply this policy to `all projects in this group` `without
-  exceptions`.
+- Policy scope: Apply this policy to `all projects in this group`
+  `except projects`
+  `building-castles - Security policy project` `without group exceptions`.
 - Rules: When a `security scan` with `Container Scanning` runs against `all
   protected branches` with `no exceptions` and finds `any` vulnerability type
   that matches all the following criteria:
@@ -148,6 +161,7 @@ include:
 variables:
   SECURE_LOG_LEVEL: debug
   SCAN_KUBERNETES_MANIFESTS: 'true'
+  DOCKER_BUILDKIT: 0
   CS_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
 
 stages:

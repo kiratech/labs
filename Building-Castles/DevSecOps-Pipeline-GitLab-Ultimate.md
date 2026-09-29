@@ -4,28 +4,6 @@ In this lab you will install GitLab and configure its runner to play with CI.
 
 ## Launch GitLab
 
-Prepare the environment by creating the dedicated folders with the auto
-generated certificate for the `172.16.99.1` IP:
-
-```console
-$ export GITLAB_HOME=$PWD/gitlab
-(no output)
-
-$ mkdir -v -p gitlab/config/ssl
-mkdir: created directory 'gitlab'
-mkdir: created directory 'gitlab/config'
-mkdir: created directory 'gitlab/config/ssl'
-
-$ export GITLAB_IP='172.16.99.1'
-(no output)
-
-$ openssl req -x509 -newkey rsa:4096 -days 365 -nodes \
-  -keyout gitlab/config/ssl/$GITLAB_IP.key \
-  -out gitlab/config/ssl/$GITLAB_IP.crt \
-  -subj "/CN=$GITLAB_IP" -addext "subjectAltName=IP:$GITLAB_IP"
-...
-```
-
 Launch the GitLab Enterprise instance using the `gitlab/gitlab-ee` container,
 exposing these ports (Host/Container):
 
@@ -34,8 +12,11 @@ exposing these ports (Host/Container):
 - 2222:22 -> the `ssh` port for git actions.
 - 5050:5050 -> the GitLab Ultimate Container Registry service port.
 
+Note that the GitLab instance will rely on the certificate that was generated
+in the previous [DevSecOps-Pipeline-GitLab-Ultimate-Requirements.md]() lab.
+
 ```console
-$ GITLAB_VERSION=18.8.2-ee.0
+$ GITLAB_VERSION=19.1.8-ee.0
 (no output)
 
 $ GITLAB_HOME=$PWD/gitlab \
@@ -47,8 +28,8 @@ $ GITLAB_HOME=$PWD/gitlab \
   --publish 172.16.99.1:5050:5050 \
   --volume $GITLAB_HOME/config:/etc/gitlab \
   --volume $GITLAB_HOME/data:/var/opt/gitlab \
-  --env GITLAB_OMNIBUS_CONFIG="external_url 'https://172.16.99.1:8443'; registry_external_url 'https://172.16.99.1:5050'" \
-  --shm-size=2gb \
+  --env GITLAB_OMNIBUS_CONFIG="external_url 'https://172.16.99.1:8443'; registry_external_url 'https://172.16.99.1:5050'; letsencrypt['enable'] = false" \
+  --shm-size=4gb \
   gitlab/gitlab-ee:$GITLAB_VERSION
 706346108a7168c07994c411815cfd60ddd65722131c4cfb9ff4ca37b828a26c
 ```
@@ -101,7 +82,7 @@ the token, which will be something like `GR1348941uHeDhAB5DDA8r_5xvxsm`.
 Set up the runner by launching its container:
 
 ```console
-$ GITLAB_RUNNER_VERSION=v18.4.0
+$ GITLAB_RUNNER_VERSION=v19.1.3
 (no output)
 
 $ GITLAB_RUNNER_HOME=$PWD/gitlab-runner
@@ -110,6 +91,7 @@ $ GITLAB_RUNNER_HOME=$PWD/gitlab-runner
 $ docker run --detach \
   --name gitlab-runner \
   --privileged \
+  --env DOCKER_GROUP_ADD=989 \
   --volume /var/run/docker.sock:/var/run/docker.sock \
   --volume $GITLAB_RUNNER_HOME/gitlab-runner:/etc/gitlab-runner \
   --volume $GITLAB_HOME/config/ssl:/etc/gitlab-runner/certs \
@@ -117,8 +99,16 @@ $ docker run --detach \
 ...
 ```
 
-Register the runner inside GitLab (note the `--url` option pointing to the
-docker host IP):
+We're using a specific group for Docker (see `DOCKER_GROUP_ADD=989`) and mapping
+the Docker daemon socker (see `--volume /var/run/docker.sock:/var/run/docker.sock`)
+that will make it possible for the runner to properly launch containers.
+
+We're also mounting the `$GITLAB_HOME/config/ssl` folder of the GitLab instance
+(see `--volume $GITLAB_HOME/config/ssl:/etc/gitlab-runner/certs`) to share the
+auto generated certificate which will be trusted.
+
+To complete the GitLab runner setup, we'll register the runner (note the `--url`
+option pointing to the Docker host IP):
 
 ```console
 $ docker exec --interactive --tty gitlab-runner gitlab-runner register -n \
